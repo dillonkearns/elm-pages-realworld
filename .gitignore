@@ -1,4 +1,6 @@
 # Folders to ignore
+dist/
+.elm-pages/
 elm-stuff
 node_modules
 public/dist
