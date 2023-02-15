@@ -1,5 +1,6 @@
 module Shared exposing (Data, Model, Msg(..), SharedMsg(..), template)
 
+import Api.User
 import BackendTask exposing (BackendTask)
 import Components.Footer
 import Components.Navbar
@@ -40,7 +41,7 @@ type SharedMsg
 
 
 type alias Model =
-    { showMenu : Bool
+    { user : Maybe Api.User.User
     }
 
 
@@ -58,7 +59,7 @@ init :
             }
     -> ( Model, Effect Msg )
 init flags maybePagePath =
-    ( { showMenu = False }
+    ( { user = Nothing }
     , Effect.none
     )
 
@@ -70,7 +71,7 @@ update msg model =
             ( model, Effect.none )
 
         MenuClicked ->
-            ( { model | showMenu = not model.showMenu }, Effect.none )
+            ( { model | user = Nothing }, Effect.none )
 
 
 subscriptions : Path -> Model -> Sub Msg

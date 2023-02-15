@@ -12,7 +12,9 @@ module Api.Token exposing
 
 -}
 
-import Http
+import BackendTask exposing (BackendTask)
+import BackendTask.Http
+import FatalError exposing (FatalError)
 import Json.Decode as Json
 import Json.Encode as Encode
 
@@ -39,32 +41,32 @@ get :
     Maybe Token
     ->
         { url : String
-        , expect : Http.Expect msg
+        , expect : Json.Decoder value
         }
-    -> Cmd msg
+    -> BackendTask FatalError value
 get =
-    request "GET" Http.emptyBody
+    request "GET" BackendTask.Http.emptyBody
 
 
 delete :
     Maybe Token
     ->
         { url : String
-        , expect : Http.Expect msg
+        , expect : Json.Decoder value
         }
-    -> Cmd msg
+    -> BackendTask FatalError value
 delete =
-    request "DELETE" Http.emptyBody
+    request "DELETE" BackendTask.Http.emptyBody
 
 
 post :
     Maybe Token
     ->
         { url : String
-        , body : Http.Body
-        , expect : Http.Expect msg
+        , body : BackendTask.Http.Body
+        , expect : Json.Decoder value
         }
-    -> Cmd msg
+    -> BackendTask FatalError value
 post token options =
     request "POST" options.body token options
 
@@ -73,37 +75,38 @@ put :
     Maybe Token
     ->
         { url : String
-        , body : Http.Body
-        , expect : Http.Expect msg
+        , body : BackendTask.Http.Body
+        , expect : Json.Decoder value
         }
-    -> Cmd msg
+    -> BackendTask FatalError value
 put token options =
     request "PUT" options.body token options
 
 
 request :
     String
-    -> Http.Body
+    -> BackendTask.Http.Body
     -> Maybe Token
     ->
         { options
             | url : String
-            , expect : Http.Expect msg
+            , expect : Json.Decoder value
         }
-    -> Cmd msg
+    -> BackendTask FatalError value
 request method body maybeToken options =
-    Http.request
+    BackendTask.Http.request
         { method = method
         , headers =
             case maybeToken of
                 Just (Token token) ->
-                    [ Http.header "Authorization" ("Token " ++ token) ]
+                    [ ( "Authorization", "Token " ++ token ) ]
 
                 Nothing ->
                     []
         , url = options.url
         , body = body
-        , expect = options.expect
-        , timeout = Just (1000 * 60) -- 60 second timeout
-        , tracker = Nothing
+        , timeoutInMs = Just (1000 * 60) -- 60 second timeout
+        , retries = Nothing
         }
+        (BackendTask.Http.expectJson options.expect)
+        |> BackendTask.allowFatal

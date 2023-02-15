@@ -1,7 +1,7 @@
 module Api.Profile exposing
     ( Profile
     , decoder
-    , get, follow, unfollow
+    --, get, follow, unfollow
     )
 
 {-|
@@ -38,49 +38,48 @@ decoder =
 
 
 -- ENDPOINTS
-
-
-get :
-    { token : Maybe Token
-    , username : String
-    , onResponse : Data Profile -> msg
-    }
-    -> Cmd msg
-get options =
-    Api.Token.get options.token
-        { url = "https://conduit.productionready.io/api/profiles/" ++ options.username
-        , expect =
-            Api.Data.expectJson options.onResponse
-                (Json.field "profile" decoder)
-        }
-
-
-follow :
-    { token : Token
-    , username : String
-    , onResponse : Data Profile -> msg
-    }
-    -> Cmd msg
-follow options =
-    Api.Token.post (Just options.token)
-        { url = "https://conduit.productionready.io/api/profiles/" ++ options.username ++ "/follow"
-        , body = Http.emptyBody
-        , expect =
-            Api.Data.expectJson options.onResponse
-                (Json.field "profile" decoder)
-        }
-
-
-unfollow :
-    { token : Token
-    , username : String
-    , onResponse : Data Profile -> msg
-    }
-    -> Cmd msg
-unfollow options =
-    Api.Token.delete (Just options.token)
-        { url = "https://conduit.productionready.io/api/profiles/" ++ options.username ++ "/follow"
-        , expect =
-            Api.Data.expectJson options.onResponse
-                (Json.field "profile" decoder)
-        }
+--
+--get :
+--    { token : Maybe Token
+--    , username : String
+--    , onResponse : Data Profile -> msg
+--    }
+--    -> Cmd msg
+--get options =
+--    Api.Token.get options.token
+--        { url = "https://conduit.productionready.io/api/profiles/" ++ options.username
+--        , expect =
+--            Api.Data.expectJson options.onResponse
+--                (Json.field "profile" decoder)
+--        }
+--
+--
+--follow :
+--    { token : Token
+--    , username : String
+--    , onResponse : Data Profile -> msg
+--    }
+--    -> Cmd msg
+--follow options =
+--    Api.Token.post (Just options.token)
+--        { url = "https://conduit.productionready.io/api/profiles/" ++ options.username ++ "/follow"
+--        , body = Http.emptyBody
+--        , expect =
+--            Api.Data.expectJson options.onResponse
+--                (Json.field "profile" decoder)
+--        }
+--
+--
+--unfollow :
+--    { token : Token
+--    , username : String
+--    , onResponse : Data Profile -> msg
+--    }
+--    -> Cmd msg
+--unfollow options =
+--    Api.Token.delete (Just options.token)
+--        { url = "https://conduit.productionready.io/api/profiles/" ++ options.username ++ "/follow"
+--        , expect =
+--            Api.Data.expectJson options.onResponse
+--                (Json.field "profile" decoder)
+--        }

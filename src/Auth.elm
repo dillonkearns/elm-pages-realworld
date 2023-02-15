@@ -2,8 +2,8 @@ module Auth exposing (User, beforeProtectedInit)
 
 import Api.User
 import ElmSpa.Page as ElmSpa
-import Gen.Route exposing (Route)
 import Request exposing (Request)
+import Route exposing (Route)
 import Shared
 
 
@@ -18,4 +18,8 @@ beforeProtectedInit shared req =
             ElmSpa.Provide user
 
         Nothing ->
-            ElmSpa.RedirectTo Gen.Route.Login
+            ElmSpa.RedirectTo Route.Index
+
+
+
+--ElmSpa.RedirectTo Gen.Route.Login

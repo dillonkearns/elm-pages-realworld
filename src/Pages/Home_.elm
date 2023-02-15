@@ -64,7 +64,8 @@ init shared =
     ( model
     , Cmd.batch
         [ fetchArticlesForTab shared model
-        , Api.Article.Tag.list { onResponse = GotTags }
+
+        --, Api.Article.Tag.list { onResponse = GotTags }
         ]
     )
 

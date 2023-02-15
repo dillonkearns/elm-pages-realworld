@@ -13,49 +13,47 @@ import Utils.Time
 
 view :
     { user : Maybe User
-    , articleListing : Data Api.Article.Listing
-    , onFavorite : User -> Article -> msg
-    , onUnfavorite : User -> Article -> msg
-    , onPageClick : Int -> msg
+    , articleListing : Api.Article.Listing
+
+    --, onFavorite : User -> Article -> msg
+    --, onUnfavorite : User -> Article -> msg
+    --, onPageClick : Int -> msg
     }
     -> List (Html msg)
 view options =
-    case options.articleListing of
-        Api.Data.Loading ->
-            [ div [ class "article-preview" ] [ text "Loading..." ] ]
+    let
+        listing =
+            options.articleListing
 
-        Api.Data.Success listing ->
-            let
-                viewPage : Int -> Html msg
-                viewPage page =
-                    li
-                        [ class "page-item"
-                        , classList [ ( "active", listing.page == page ) ]
-                        ]
-                        [ button
-                            [ class "page-link"
-                            , Events.onClick (options.onPageClick page)
-                            ]
-                            [ text (String.fromInt page) ]
-                        ]
-            in
-            List.concat
-                [ List.map (viewArticlePreview options) listing.articles
-                , [ List.range 1 listing.totalPages
-                        |> List.map viewPage
-                        |> ul [ class "pagination" ]
-                  ]
+        viewPage : Int -> Html msg
+        viewPage page =
+            li
+                [ class "page-item"
+                , classList [ ( "active", listing.page == page ) ]
                 ]
+                [ button
+                    [ class "page-link"
 
-        _ ->
-            []
+                    --, Events.onClick (options.onPageClick page)
+                    ]
+                    [ text (String.fromInt page) ]
+                ]
+    in
+    List.concat
+        [ List.map (viewArticlePreview options) listing.articles
+        , [ List.range 1 listing.totalPages
+                |> List.map viewPage
+                |> ul [ class "pagination" ]
+          ]
+        ]
 
 
 viewArticlePreview :
     { options
         | user : Maybe User
-        , onFavorite : User -> Article -> msg
-        , onUnfavorite : User -> Article -> msg
+
+        --, onFavorite : User -> Article -> msg
+        --, onUnfavorite : User -> Article -> msg
     }
     -> Article
     -> Html msg
@@ -72,24 +70,26 @@ viewArticlePreview options article =
             , div [ class "pull-xs-right" ]
                 [ Utils.Maybe.view options.user <|
                     \user ->
-                        if user.username == article.author.username then
-                            text ""
+                        --if user.username == article.author.username then
+                        text ""
 
-                        else if article.favorited then
-                            IconButton.view
-                                { color = IconButton.FilledGreen
-                                , icon = IconButton.Heart
-                                , label = " " ++ String.fromInt article.favoritesCount
-                                , onClick = options.onUnfavorite user article
-                                }
-
-                        else
-                            IconButton.view
-                                { color = IconButton.OutlinedGreen
-                                , icon = IconButton.Heart
-                                , label = " " ++ String.fromInt article.favoritesCount
-                                , onClick = options.onFavorite user article
-                                }
+                --     --   TODO adapt for elm-pages Forms
+                --else if article.favorited then
+                --    IconButton.view
+                --        { color = IconButton.FilledGreen
+                --        , icon = IconButton.Heart
+                --        , label = " " ++ String.fromInt article.favoritesCount
+                --        , onClick = options.onUnfavorite user article
+                --        }
+                --
+                --     --   TODO adapt for elm-pages Forms
+                --else
+                --    IconButton.view
+                --        { color = IconButton.OutlinedGreen
+                --        , icon = IconButton.Heart
+                --        , label = " " ++ String.fromInt article.favoritesCount
+                --        , onClick = options.onFavorite user article
+                --        }
                 ]
             ]
         , a [ class "preview-link", href ("/article/" ++ article.slug) ]
