@@ -1,10 +1,12 @@
 module Shared exposing (Data, Model, Msg(..), SharedMsg(..), template)
 
 import BackendTask exposing (BackendTask)
+import Components.Footer
+import Components.Navbar
 import Effect exposing (Effect)
 import FatalError exposing (FatalError)
-import Html exposing (Html)
-import Html.Events
+import Html exposing (Html, div)
+import Html.Attributes exposing (class)
 import Pages.Flags
 import Pages.PageUrl exposing (PageUrl)
 import Path exposing (Path)
@@ -92,29 +94,23 @@ view :
     -> View msg
     -> { body : List (Html msg), title : String }
 view sharedData page model toMsg pageView =
-    { body =
-        [ Html.nav []
-            [ Html.button
-                [ Html.Events.onClick MenuClicked ]
-                [ Html.text
-                    (if model.showMenu then
-                        "Close Menu"
+    { title =
+        if String.isEmpty pageView.title then
+            "Conduit"
 
-                     else
-                        "Open Menu"
-                    )
-                ]
-            , if model.showMenu then
-                Html.ul []
-                    [ Html.li [] [ Html.text "Menu item 1" ]
-                    , Html.li [] [ Html.text "Menu item 2" ]
-                    ]
+        else
+            pageView.title ++ " | Conduit"
+    , body =
+        [ div [ class "layout" ]
+            [ Components.Navbar.view
+                { user = Nothing --model.user
+                , currentRoute = page.route |> Maybe.withDefault Route.Index
 
-              else
-                Html.text ""
+                --Utils.Route.fromUrl req.url
+                , onSignOut = toMsg MenuClicked --toMsg ClickedSignOut
+                }
+            , div [ class "page" ] pageView.body
+            , Components.Footer.view
             ]
-            |> Html.map toMsg
-        , Html.main_ [] pageView.body
         ]
-    , title = pageView.title
     }
