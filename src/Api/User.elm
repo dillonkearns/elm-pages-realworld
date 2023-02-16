@@ -1,6 +1,7 @@
 module Api.User exposing
     ( User
     , decoder, encode
+    , authentication
     --, authentication, registration, update
     )
 
@@ -15,6 +16,9 @@ module Api.User exposing
 
 import Api.Data exposing (Data)
 import Api.Token exposing (Token)
+import BackendTask exposing (BackendTask)
+import BackendTask.Http
+import FatalError exposing (FatalError)
 import Http
 import Json.Decode as Json
 import Json.Encode as Encode
@@ -51,32 +55,32 @@ encode user =
         ]
 
 
+authentication :
+    { email : String, password : String }
+    -> BackendTask FatalError User
+authentication user =
+    let
+        body : Json.Value
+        body =
+            Encode.object
+                [ ( "user"
+                  , Encode.object
+                        [ ( "email", Encode.string user.email )
+                        , ( "password", Encode.string user.password )
+                        ]
+                  )
+                ]
+    in
+    BackendTask.Http.post
+        "https://conduit.productionready.io/api/users/login"
+        (BackendTask.Http.jsonBody body)
+        (BackendTask.Http.expectJson
+            (Json.field "user" decoder)
+        )
+        |> BackendTask.allowFatal
 
---authentication :
---    { user : { user | email : String, password : String }
---    , onResponse : Data User -> msg
---    }
---    -> Cmd msg
---authentication options =
---    let
---        body : Json.Value
---        body =
---            Encode.object
---                [ ( "user"
---                  , Encode.object
---                        [ ( "email", Encode.string options.user.email )
---                        , ( "password", Encode.string options.user.password )
---                        ]
---                  )
---                ]
---    in
---    Http.post
---        { url = "https://conduit.productionready.io/api/users/login"
---        , body = Http.jsonBody body
---        , expect =
---            Api.Data.expectJson options.onResponse
---                (Json.field "user" decoder)
---        }
+
+
 --
 --
 --registration :

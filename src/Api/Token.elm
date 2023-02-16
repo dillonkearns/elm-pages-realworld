@@ -2,6 +2,7 @@ module Api.Token exposing
     ( Token
     , decoder, encode
     , get, put, post, delete
+    , fromSession, toString
     )
 
 {-|
@@ -17,10 +18,23 @@ import BackendTask.Http
 import FatalError exposing (FatalError)
 import Json.Decode as Json
 import Json.Encode as Encode
+import Server.Session as Session exposing (Session)
 
 
 type Token
     = Token String
+
+
+toString : Token -> String
+toString (Token token) =
+    token
+
+
+fromSession : Session -> Maybe Token
+fromSession session =
+    session
+        |> Session.get "token"
+        |> Maybe.map Token
 
 
 decoder : Json.Decoder Token

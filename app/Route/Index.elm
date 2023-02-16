@@ -9,6 +9,7 @@ module Route.Index exposing (ActionData, Data, route, RouteParams, Msg, Model)
 import Api.Article exposing (Article)
 import Api.Article.Filters as Filters
 import Api.Article.Tag exposing (Tag)
+import Api.Token as Token exposing (Token)
 import Api.User exposing (User)
 import BackendTask
 import Components.ArticleList
@@ -25,6 +26,8 @@ import Platform.Sub
 import RouteBuilder
 import Server.Request
 import Server.Response
+import Server.Session
+import Server.SetCookie
 import Shared
 import Utils.Maybe
 import View exposing (View)
@@ -109,27 +112,49 @@ data routeParams =
     --                |> Maybe.map FeedFor
     --                |> Maybe.withDefault Global
     Server.Request.succeed
-        (BackendTask.map2
-            (\tags listing ->
-                Server.Response.render
-                    { tags = tags
-                    , activeTab =
-                        -- TODO check query params for active tab
-                        Global
-                    , page =
-                        -- TODO get page from query params
-                        1
-                    , listing = listing
-                    }
+        ()
+        |> Server.Session.withSession
+            { name = "realworld-user"
+            , secrets = BackendTask.succeed [ "not-so-secret" ]
+            , options =
+                Server.SetCookie.initOptions
+                    |> Server.SetCookie.withPath "/"
+            }
+            (\() sessionResult ->
+                let
+                    okSession : Server.Session.Session
+                    okSession =
+                        sessionResult
+                            |> Result.withDefault Server.Session.empty
+                            |> Debug.log "session"
+
+                    token : Maybe Token
+                    token =
+                        okSession |> Token.fromSession
+                in
+                BackendTask.map2
+                    (\tags listing ->
+                        ( okSession
+                        , Server.Response.render
+                            { tags = tags
+                            , activeTab =
+                                -- TODO check query params for active tab
+                                Global
+                            , page =
+                                -- TODO get page from query params
+                                1
+                            , listing = listing
+                            }
+                        )
+                    )
+                    Api.Article.Tag.list
+                    (Api.Article.list
+                        { page = 1
+                        , filters = Filters.create
+                        , token = token |> Debug.log "token"
+                        }
+                    )
             )
-            Api.Article.Tag.list
-            (Api.Article.list
-                { page = 1
-                , filters = Filters.create
-                , token = Nothing
-                }
-            )
-        )
 
 
 head : RouteBuilder.StaticPayload Data ActionData RouteParams -> List Head.Tag
