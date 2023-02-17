@@ -13,6 +13,8 @@ import Api.Token as Token exposing (Token)
 import Api.User exposing (User)
 import BackendTask
 import Components.ArticleList
+import Components.Footer
+import Components.Navbar
 import Effect
 import ErrorPage
 import FatalError
@@ -23,6 +25,7 @@ import Pages.Msg
 import Pages.PageUrl
 import Path
 import Platform.Sub
+import Route
 import RouteBuilder
 import Server.Request
 import Server.Response
@@ -94,6 +97,7 @@ type alias Data =
     , activeTab : Tab
     , page : Int
     , listing : Api.Article.Listing
+    , user : Maybe User
     }
 
 
@@ -132,8 +136,8 @@ data routeParams =
                     token =
                         okSession |> Token.fromSession
                 in
-                BackendTask.map2
-                    (\tags listing ->
+                BackendTask.map3
+                    (\tags listing maybeUser ->
                         ( okSession
                         , Server.Response.render
                             { tags = tags
@@ -144,16 +148,20 @@ data routeParams =
                                 -- TODO get page from query params
                                 1
                             , listing = listing
+                            , user = maybeUser
                             }
                         )
                     )
                     Api.Article.Tag.list
                     (Api.Article.list
-                        { page = 1
+                        { page =
+                            -- TODO get page from query params
+                            1
                         , filters = Filters.create
-                        , token = token |> Debug.log "token"
+                        , token = token
                         }
                     )
+                    (Api.User.getUser token)
             )
 
 
@@ -171,28 +179,41 @@ view :
 view maybeUrl shared model app =
     { title = ""
     , body =
-        [ div [ class "home-page" ]
-            [ div [ class "banner" ]
-                [ div [ class "container" ]
-                    [ h1 [ class "logo-font" ] [ text "conduit" ]
-                    , p [] [ text "A place to share your knowledge." ]
-                    ]
-                ]
-            , div [ class "container page" ]
-                [ div [ class "row" ]
-                    [ div [ class "col-md-9" ] <|
-                        (viewTabs shared app.data.activeTab
-                            :: Components.ArticleList.view
-                                { user = shared.user
-                                , articleListing = app.data.listing
-                                }
-                        )
-                    , div [ class "col-md-3" ]
-                        [ viewTags app.data.tags
+        [ div [ class "layout" ]
+            [ Components.Navbar.view
+                { user = app.data.user
+                , currentRoute = Route.Index
+
+                --Utils.Route.fromUrl req.url
+                --, onSignOut = toMsg MenuClicked --toMsg ClickedSignOut
+                , onSignOut = NoOp |> Pages.Msg.UserMsg
+                }
+            , div [ class "page" ]
+                [ div [ class "home-page" ]
+                    [ div [ class "banner" ]
+                        [ div [ class "container" ]
+                            [ h1 [ class "logo-font" ] [ text "conduit" ]
+                            , p [] [ text "A place to share your knowledge." ]
+                            ]
+                        ]
+                    , div [ class "container page" ]
+                        [ div [ class "row" ]
+                            [ div [ class "col-md-9" ] <|
+                                (viewTabs app.data.user app.data.activeTab
+                                    :: Components.ArticleList.view
+                                        { user = app.data.user
+                                        , articleListing = app.data.listing
+                                        }
+                                )
+                            , div [ class "col-md-3" ]
+                                [ viewTags app.data.tags
+                                ]
+                            ]
                         ]
                     ]
                 ]
             ]
+        , Components.Footer.view
         ]
     }
 
@@ -321,13 +342,13 @@ type Tab
 
 
 viewTabs :
-    Shared.Model
+    Maybe User
     -> Tab
     -> Html msg
-viewTabs shared activeTab =
+viewTabs maybeUser activeTab =
     div [ class "feed-toggle" ]
         [ ul [ class "nav nav-pills outline-active" ]
-            [ Utils.Maybe.view shared.user <|
+            [ Utils.Maybe.view maybeUser <|
                 \user ->
                     li [ class "nav-item" ]
                         [ button

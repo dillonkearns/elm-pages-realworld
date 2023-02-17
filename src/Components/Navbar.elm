@@ -1,5 +1,6 @@
 module Components.Navbar exposing (view)
 
+import Api.Token exposing (Token)
 import Api.User exposing (User)
 import Html exposing (..)
 import Html.Attributes exposing (class, classList)
@@ -40,9 +41,8 @@ view options =
                     Nothing ->
                         List.map (viewLink options.currentRoute) <|
                             [ ( "Home", Route.Index )
-
-                            --, ( "Sign in", Route.Login )
-                            --, ( "Sign up", Route.Register )
+                            , ( "Sign in", Route.Login )
+                            , ( "Sign up", Route.Register )
                             ]
             ]
         ]

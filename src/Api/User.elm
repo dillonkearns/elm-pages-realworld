@@ -2,7 +2,9 @@ module Api.User exposing
     ( User
     , decoder, encode
     , authentication
-    --, authentication, registration, update
+    ,  getUser
+       --, authentication, registration, update
+
     )
 
 {-|
@@ -78,6 +80,20 @@ authentication user =
             (Json.field "user" decoder)
         )
         |> BackendTask.allowFatal
+
+
+getUser : Maybe Token -> BackendTask FatalError (Maybe User)
+getUser maybeToken =
+    case maybeToken of
+        Just token ->
+            Api.Token.get (Just token)
+                { url = "https://api.realworld.io/api/user"
+                , expect = Json.field "user" decoder
+                }
+                |> BackendTask.map Just
+
+        Nothing ->
+            BackendTask.succeed Nothing
 
 
 

@@ -102,16 +102,18 @@ view sharedData page model toMsg pageView =
         else
             pageView.title ++ " | Conduit"
     , body =
-        [ div [ class "layout" ]
-            [ Components.Navbar.view
-                { user = Nothing --model.user
-                , currentRoute = page.route |> Maybe.withDefault Route.Index
+        pageView.body
 
-                --Utils.Route.fromUrl req.url
-                , onSignOut = toMsg MenuClicked --toMsg ClickedSignOut
-                }
-            , div [ class "page" ] pageView.body
-            , Components.Footer.view
-            ]
-        ]
+    --[ div [ class "layout" ]
+    --    [ Components.Navbar.view
+    --        { user = Nothing --model.user
+    --        , currentRoute = page.route |> Maybe.withDefault Route.Index
+    --
+    --        --Utils.Route.fromUrl req.url
+    --        , onSignOut = toMsg MenuClicked --toMsg ClickedSignOut
+    --        }
+    --    , div [ class "page" ] pageView.body
+    --    , Components.Footer.view
+    --    ]
+    --]
     }
