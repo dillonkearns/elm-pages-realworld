@@ -84,7 +84,7 @@ subscriptions :
     -> Model
     -> Sub Msg
 subscriptions maybePageUrl routeParams path sharedModel model =
-    Platform.Sub.none
+    Sub.none
 
 
 type alias Data =
