@@ -381,8 +381,8 @@ favoriteForm =
                     article =
                         formState.data
 
-                    elipsesIfInProgress : String
-                    elipsesIfInProgress =
+                    ellipsesIfInProgress : String
+                    ellipsesIfInProgress =
                         if formState.isTransitioning then
                             "..."
 
@@ -393,14 +393,14 @@ favoriteForm =
                     IconButton.view
                         { color = IconButton.FilledGreen
                         , icon = IconButton.Heart
-                        , label = " " ++ String.fromInt article.favoritesCount ++ elipsesIfInProgress
+                        , label = " " ++ String.fromInt article.favoritesCount ++ ellipsesIfInProgress
                         }
 
                   else
                     IconButton.view
                         { color = IconButton.OutlinedGreen
                         , icon = IconButton.Heart
-                        , label = " " ++ String.fromInt article.favoritesCount ++ elipsesIfInProgress
+                        , label = " " ++ String.fromInt article.favoritesCount ++ ellipsesIfInProgress
                         }
                 ]
         }

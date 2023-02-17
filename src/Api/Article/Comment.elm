@@ -16,6 +16,7 @@ import Api.Data exposing (Data)
 import Api.Profile exposing (Profile)
 import Api.Token exposing (Token)
 import BackendTask exposing (BackendTask)
+import BackendTask.Http
 import FatalError exposing (FatalError)
 import Http
 import Iso8601
@@ -63,9 +64,8 @@ create :
     { token : Token
     , articleSlug : String
     , comment : { comment | body : String }
-    , onResponse : Data Comment -> msg
     }
-    -> Cmd msg
+    -> BackendTask FatalError Comment
 create options =
     let
         body : Json.Value
@@ -78,14 +78,12 @@ create options =
                   )
                 ]
     in
-    --Api.Token.post (Just options.token)
-    --    { url = "https://api.realworld.io/api/articles/" ++ options.articleSlug ++ "/comments"
-    --    , body = Http.jsonBody body
-    --    , expect =
-    --        Api.Data.expectJson options.onResponse
-    --            (Json.field "comment" decoder)
-    --    }
-    Debug.todo ""
+    Api.Token.post (Just options.token)
+        { url = "https://api.realworld.io/api/articles/" ++ options.articleSlug ++ "/comments"
+        , body = BackendTask.Http.jsonBody body
+        , expect =
+            Json.field "comment" decoder
+        }
 
 
 delete :

@@ -1,22 +1,17 @@
-module Route.Article.Slug_ exposing (ActionData, Data, route, RouteParams, Msg, Model)
-
-{-|
-
-@docs ActionData, Data, route, RouteParams, Msg, Model
-
--}
+module Route.Article.Slug_ exposing (ActionData, Data, Model, Msg, RouteParams, route)
 
 import Api.Article exposing (Article)
 import Api.Article.Comment exposing (Comment)
 import Api.Profile exposing (Profile)
 import Api.User exposing (User)
-import BackendTask
+import BackendTask exposing (BackendTask)
 import Components.IconButton as IconButton
 import Effect
-import ErrorPage
-import FatalError
+import ErrorPage exposing (ErrorPage)
+import FatalError exposing (FatalError)
 import Form
 import Form.Field
+import Form.FieldView
 import Form.Validation
 import Form.Value
 import Head
@@ -220,8 +215,8 @@ favoriteForm =
                     article =
                         formState.data
 
-                    elipsesIfInProgress : String
-                    elipsesIfInProgress =
+                    ellipsesIfInProgress : String
+                    ellipsesIfInProgress =
                         if formState.isTransitioning then
                             "..."
 
@@ -233,7 +228,7 @@ favoriteForm =
                         { color = IconButton.FilledGreen
                         , icon = IconButton.Heart
                         , label =
-                            --" " ++ String.fromInt article.favoritesCount ++ elipsesIfInProgress
+                            --" " ++ String.fromInt article.favoritesCount ++ ellipsesIfInProgress
                             "Unfavorite Post (" ++ String.fromInt article.favoritesCount ++ ")"
                         }
 
@@ -242,7 +237,7 @@ favoriteForm =
                         { color = IconButton.OutlinedGreen
                         , icon = IconButton.Heart
                         , label =
-                            --" " ++ String.fromInt article.favoritesCount ++ elipsesIfInProgress
+                            --" " ++ String.fromInt article.favoritesCount ++ ellipsesIfInProgress
                             "Favorite Post (" ++ String.fromInt article.favoritesCount ++ ")"
                         }
                 ]
@@ -268,8 +263,8 @@ followForm =
                     author =
                         formState.data.author
 
-                    elipsesIfInProgress : String
-                    elipsesIfInProgress =
+                    ellipsesIfInProgress : String
+                    ellipsesIfInProgress =
                         if formState.isTransitioning then
                             "..."
 
@@ -280,14 +275,14 @@ followForm =
                     IconButton.view
                         { color = IconButton.FilledGray
                         , icon = IconButton.Plus
-                        , label = "Unfollow " ++ author.username ++ elipsesIfInProgress
+                        , label = "Unfollow " ++ author.username ++ ellipsesIfInProgress
                         }
 
                   else
                     IconButton.view
                         { color = IconButton.OutlinedGray
                         , icon = IconButton.Plus
-                        , label = "Follow " ++ author.username ++ elipsesIfInProgress
+                        , label = "Follow " ++ author.username ++ ellipsesIfInProgress
                         }
                 ]
         }
@@ -296,6 +291,47 @@ followForm =
         |> Form.hiddenField "username" (Form.Field.required "Required" Form.Field.text |> Form.Field.withInitialValue (.author >> .username >> Form.Value.string))
         |> Form.hiddenField "set-follow" (Form.Field.checkbox |> Form.Field.withInitialValue (.author >> .following >> not >> Form.Value.bool))
         |> Form.hiddenKind ( "kind", "follow" ) "Expected kind."
+
+
+commentForm : Form.HtmlForm String String User Msg
+commentForm =
+    (\comment ->
+        { combine =
+            Form.Validation.succeed identity
+                |> Form.Validation.andMap comment
+        , view =
+            \formState ->
+                let
+                    ellipsesIfInProgress : String
+                    ellipsesIfInProgress =
+                        if formState.isTransitioning then
+                            "..."
+
+                        else
+                            ""
+                in
+                [ div [ class "card-block" ]
+                    [ Form.FieldView.input
+                        [ class "form-control"
+                        , placeholder "Write a comment..."
+                        ]
+                        comment
+                    ]
+                , div [ class "card-footer" ]
+                    [ img [ class "comment-author-img", src formState.data.image ] []
+                    , button [ class "btn btn-sm btn-primary", Html.Attributes.disabled formState.isTransitioning ]
+                        [ text ("Post Comment" ++ ellipsesIfInProgress) ]
+                    ]
+                ]
+        }
+    )
+        |> Form.init
+        |> Form.hiddenKind ( "kind", "create-comment" ) "Expected kind."
+        |> Form.field "comment"
+            (Form.Field.textarea
+                { rows = Just 3, cols = Nothing }
+                (Form.Field.required "Required" Form.Field.text)
+            )
 
 
 type alias FavoriteAction =
@@ -313,12 +349,14 @@ type alias FollowAction =
 type Action
     = Favorite FavoriteAction
     | Follow FollowAction
+    | SubmitComment String
 
 
 formHandlers : Form.ServerForms String Action
 formHandlers =
     Form.initCombined Favorite favoriteForm
         |> Form.combine Follow followForm
+        |> Form.combine SubmitComment commentForm
 
 
 viewCommentSection : RouteBuilder.StaticPayload Data ActionData RouteParams -> Article -> Html (Pages.Msg.Msg Msg)
@@ -328,37 +366,18 @@ viewCommentSection app article =
             List.concat
                 [ case app.data.user of
                     Just user ->
-                        [ viewCommentForm user article ]
+                        [ Form.renderHtml
+                            [ class "card comment-form" ]
+                            (\_ -> Nothing)
+                            app
+                            user
+                            (Form.toDynamicTransition "submit-comment" commentForm)
+                        ]
 
                     Nothing ->
                         []
                 , List.map (viewComment app.data.user article) app.data.comments
                 ]
-        ]
-
-
-viewCommentForm : User -> Article -> Html (Pages.Msg.Msg Msg)
-viewCommentForm user article =
-    form
-        [ class "card comment-form"
-
-        --, Events.onSubmit (SubmittedCommentForm user article)
-        ]
-        [ div [ class "card-block" ]
-            [ textarea
-                [ class "form-control"
-                , placeholder "Write a comment..."
-                , attribute "rows" "3"
-
-                --, value model.commentText
-                --, Events.onInput UpdatedCommentText
-                ]
-                []
-            ]
-        , div [ class "card-footer" ]
-            [ img [ class "comment-author-img", src user.image ] []
-            , button [ class "btn btn-sm btn-primary" ] [ text "Post Comment" ]
-            ]
         ]
 
 
@@ -414,7 +433,7 @@ type alias ActionData =
 
 data :
     RouteParams
-    -> Server.Request.Parser (BackendTask.BackendTask FatalError.FatalError (Server.Response.Response Data ErrorPage.ErrorPage))
+    -> Server.Request.Parser (BackendTask FatalError (Server.Response.Response Data ErrorPage))
 data routeParams =
     Server.Request.succeed
         ()
@@ -499,6 +518,23 @@ action routeParams =
                                     Nothing ->
                                         BackendTask.succeed (\_ -> Server.Response.render {})
 
+                            Ok (SubmitComment comment) ->
+                                case token of
+                                    Just justToken ->
+                                        Api.Article.Comment.create
+                                            { token = justToken
+                                            , articleSlug = routeParams.slug
+                                            , comment = { body = comment }
+                                            }
+                                            |> BackendTask.map
+                                                (\_ ->
+                                                    \_ ->
+                                                        Server.Response.render {}
+                                                )
+
+                                    Nothing ->
+                                        BackendTask.succeed (\_ -> Server.Response.render {})
+
                             Err _ ->
                                 BackendTask.succeed (\_ -> Server.Response.render {})
             )
@@ -510,9 +546,6 @@ action routeParams =
 --    | DeletedArticle (Data Article)
 --    | ClickedDeleteComment User Article Comment
 --    | DeletedComment (Data Int)
---    | SubmittedCommentForm User Article
---    | CreatedComment (Data Comment)
---    | UpdatedCommentText String
 --
 --
 --update : Request.With Params -> Msg -> Model -> ( Model, Cmd Msg )
@@ -530,35 +563,6 @@ action routeParams =
 --        DeletedArticle _ ->
 --            ( model
 --            , Utils.Route.navigate req.key Route.Home_
---            )
---
---        UpdatedCommentText text ->
---            ( { model | commentText = text }
---            , Cmd.none
---            )
---
---        SubmittedCommentForm user article ->
---            if String.isEmpty model.commentText then
---                ( model, Cmd.none )
---
---            else
---                ( { model | commentText = "" }
---                , Api.Article.Comment.create
---                    { token = user.token
---                    , articleSlug = article.slug
---                    , comment = { body = model.commentText }
---                    , onResponse = CreatedComment
---                    }
---                )
---
---        CreatedComment comment ->
---            ( case comment of
---                Api.Data.Success c ->
---                    { model | comments = Api.Data.map (\comments -> c :: comments) model.comments }
---
---                _ ->
---                    model
---            , Cmd.none
 --            )
 --
 --        ClickedDeleteComment user article comment ->
