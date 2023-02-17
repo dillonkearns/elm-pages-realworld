@@ -1,6 +1,5 @@
 module Components.Navbar exposing (view)
 
-import Api.Token exposing (Token)
 import Api.User exposing (User)
 import Html exposing (..)
 import Html.Attributes exposing (class, classList)
