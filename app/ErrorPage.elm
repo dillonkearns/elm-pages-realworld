@@ -1,24 +1,22 @@
 module ErrorPage exposing (ErrorPage(..), Model, Msg, head, init, internalError, notFound, statusCode, update, view)
 
+import Components.NotFound
 import Effect exposing (Effect)
 import Head
-import Html exposing (Html)
-import Html.Events exposing (onClick)
 import View exposing (View)
 
 
 type Msg
-    = Increment
+    = NoOp
 
 
 type alias Model =
-    { count : Int
-    }
+    {}
 
 
 init : ErrorPage -> ( Model, Effect Msg )
 init errorPage =
-    ( { count = 0 }
+    ( {}
     , Effect.none
     )
 
@@ -26,8 +24,8 @@ init errorPage =
 update : ErrorPage -> Msg -> Model -> ( Model, Effect Msg )
 update errorPage msg model =
     case msg of
-        Increment ->
-            ( { model | count = model.count + 1 }, Effect.none )
+        NoOp ->
+            ( model, Effect.none )
 
 
 head : ErrorPage -> List Head.Tag
@@ -52,22 +50,10 @@ internalError =
 
 view : ErrorPage -> Model -> View Msg
 view error model =
-    { body =
-        [ Html.div []
-            [ Html.p [] [ Html.text "Page not found. Maybe try another URL?" ]
-            , Html.div []
-                [ Html.button
-                    [ onClick Increment
-                    ]
-                    [ Html.text
-                        (model.count
-                            |> String.fromInt
-                        )
-                    ]
-                ]
-            ]
+    { title = "404"
+    , body =
+        [ Components.NotFound.view
         ]
-    , title = "This is a NotFound Error"
     }
 
 
