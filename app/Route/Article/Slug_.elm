@@ -11,12 +11,17 @@ import Api.Article.Comment exposing (Comment)
 import Api.Profile exposing (Profile)
 import Api.User exposing (User)
 import BackendTask
+import Components.IconButton as IconButton
 import Effect
 import ErrorPage
 import FatalError
+import Form
+import Form.Field
+import Form.Validation
+import Form.Value
 import Head
 import Html exposing (..)
-import Html.Attributes exposing (attribute, class, href, placeholder, src)
+import Html.Attributes exposing (attribute, class, placeholder, src, style)
 import Layout
 import Markdown
 import MySession
@@ -107,15 +112,12 @@ view maybeUrl shared model app =
     { title = app.data.article.title
     , body =
         [ viewArticle app app.data.article
-            |> Html.map (\_ -> Pages.Msg.UserMsg NoOp)
-
-        --|> Html.map Pages.Msg.UserMsg
         ]
             |> Layout.view app.data.user
     }
 
 
-viewArticle : RouteBuilder.StaticPayload Data ActionData RouteParams -> Article -> Html Msg
+viewArticle : RouteBuilder.StaticPayload Data ActionData RouteParams -> Article -> Html (Pages.Msg.Msg Msg)
 viewArticle app article =
     div [ class "article-page" ]
         [ div [ class "banner" ]
@@ -145,81 +147,181 @@ viewArticle app article =
         ]
 
 
-viewArticleMeta : RouteBuilder.StaticPayload Data ActionData RouteParams -> Article -> Html Msg
+viewArticleMeta : RouteBuilder.StaticPayload Data ActionData RouteParams -> Article -> Html (Pages.Msg.Msg Msg)
 viewArticleMeta app article =
     div [ class "article-meta" ] <|
         List.concat
-            [ [ a [ href ("/profile/" ++ article.author.username) ]
+            [ [ a
+                    [--href ("/profile/" ++ article.author.username)
+                    ]
                     [ img [ src article.author.image ] []
                     ]
               , div [ class "info" ]
-                    [ a [ class "author", href ("/profile/" ++ article.author.username) ] [ text article.author.username ]
+                    [ a
+                        [ class "author"
+
+                        --, href ("/profile/" ++ article.author.username)
+                        ]
+                        [ text article.author.username ]
                     , span [ class "date" ] [ text (Utils.Time.formatDate article.createdAt) ]
                     ]
               ]
             , case app.data.user of
                 Just user ->
-                    viewControls article user
+                    viewControls app article user
 
                 Nothing ->
                     []
             ]
 
 
-viewControls : Article -> User -> List (Html Msg)
-viewControls article user =
+viewControls : RouteBuilder.StaticPayload Data ActionData RouteParams -> Article -> User -> List (Html (Pages.Msg.Msg Msg))
+viewControls app article user =
     if article.author.username == user.username then
         [ a
             [ class "btn btn-outline-secondary btn-sm"
-            , href ("/editor/" ++ article.slug)
+
+            --, href ("/editor/" ++ article.slug)
             ]
             [ i [ class "ion-edit" ] []
             , text "Edit article"
             ]
-
-        --, IconButton.view
-        --    { color = IconButton.OutlinedRed
-        --    , icon = IconButton.Trash
-        --    , label = "Delete article"
-        --    , onClick = ClickedDeleteArticle user article
-        --    }
         ]
 
     else
-        [--if article.author.following then
-         --    IconButton.view
-         --        { color = IconButton.FilledGray
-         --        , icon = IconButton.Plus
-         --        , label = "Unfollow " ++ article.author.username
-         --        , onClick = ClickedUnfollow user article.author
-         --        }
-         --
-         --  else
-         --    IconButton.view
-         --        { color = IconButton.OutlinedGray
-         --        , icon = IconButton.Plus
-         --        , label = "Follow " ++ article.author.username
-         --        , onClick = ClickedFollow user article.author
-         --        }
-         --, if article.favorited then
-         --    IconButton.view
-         --        { color = IconButton.FilledGreen
-         --        , icon = IconButton.Heart
-         --        , label = "Unfavorite Post (" ++ String.fromInt article.favoritesCount ++ ")"
-         --        , onClick = ClickedUnfavorite user article
-         --        }
-         --
-         --  else
-         --    IconButton.view
-         --        { color = IconButton.OutlinedGreen
-         --        , icon = IconButton.Heart
-         --        , label = "Favorite Post (" ++ String.fromInt article.favoritesCount ++ ")"
-         --        , onClick = ClickedFavorite user article
-         --        }
+        [ Form.renderHtml
+            [ style "display" "inline"
+            ]
+            (\_ -> Nothing)
+            app
+            article
+            (Form.toDynamicTransition "follow" followForm)
+        , Form.renderHtml
+            [ style "display" "inline"
+            ]
+            (\_ -> Nothing)
+            app
+            article
+            (Form.toDynamicTransition "favorite" favoriteForm)
         ]
 
 
-viewCommentSection : RouteBuilder.StaticPayload Data ActionData RouteParams -> Article -> Html Msg
+favoriteForm : Form.HtmlForm String FavoriteAction Article Msg
+favoriteForm =
+    (\slug setFavorite ->
+        { combine =
+            Form.Validation.succeed FavoriteAction
+                |> Form.Validation.andMap slug
+                |> Form.Validation.andMap setFavorite
+        , view =
+            \formState ->
+                let
+                    article : Article
+                    article =
+                        formState.data
+
+                    elipsesIfInProgress : String
+                    elipsesIfInProgress =
+                        if formState.isTransitioning then
+                            "..."
+
+                        else
+                            ""
+                in
+                [ if formState.data.favorited then
+                    IconButton.view
+                        { color = IconButton.FilledGreen
+                        , icon = IconButton.Heart
+                        , label =
+                            --" " ++ String.fromInt article.favoritesCount ++ elipsesIfInProgress
+                            "Unfavorite Post (" ++ String.fromInt article.favoritesCount ++ ")"
+                        }
+
+                  else
+                    IconButton.view
+                        { color = IconButton.OutlinedGreen
+                        , icon = IconButton.Heart
+                        , label =
+                            --" " ++ String.fromInt article.favoritesCount ++ elipsesIfInProgress
+                            "Favorite Post (" ++ String.fromInt article.favoritesCount ++ ")"
+                        }
+                ]
+        }
+    )
+        |> Form.init
+        |> Form.hiddenField "slug" (Form.Field.required "Required" Form.Field.text |> Form.Field.withInitialValue (.slug >> Form.Value.string))
+        |> Form.hiddenField "set-favorite" (Form.Field.checkbox |> Form.Field.withInitialValue (.favorited >> not >> Form.Value.bool))
+        |> Form.hiddenKind ( "kind", "favorite" ) "Expected kind."
+
+
+followForm : Form.HtmlForm String FollowAction Article Msg
+followForm =
+    (\username setFollow ->
+        { combine =
+            Form.Validation.succeed FollowAction
+                |> Form.Validation.andMap username
+                |> Form.Validation.andMap setFollow
+        , view =
+            \formState ->
+                let
+                    author : Profile
+                    author =
+                        formState.data.author
+
+                    elipsesIfInProgress : String
+                    elipsesIfInProgress =
+                        if formState.isTransitioning then
+                            "..."
+
+                        else
+                            ""
+                in
+                [ if author.following then
+                    IconButton.view
+                        { color = IconButton.FilledGray
+                        , icon = IconButton.Plus
+                        , label = "Unfollow " ++ author.username ++ elipsesIfInProgress
+                        }
+
+                  else
+                    IconButton.view
+                        { color = IconButton.OutlinedGray
+                        , icon = IconButton.Plus
+                        , label = "Follow " ++ author.username ++ elipsesIfInProgress
+                        }
+                ]
+        }
+    )
+        |> Form.init
+        |> Form.hiddenField "username" (Form.Field.required "Required" Form.Field.text |> Form.Field.withInitialValue (.author >> .username >> Form.Value.string))
+        |> Form.hiddenField "set-follow" (Form.Field.checkbox |> Form.Field.withInitialValue (.author >> .following >> not >> Form.Value.bool))
+        |> Form.hiddenKind ( "kind", "follow" ) "Expected kind."
+
+
+type alias FavoriteAction =
+    { slug : String
+    , setFavorite : Bool
+    }
+
+
+type alias FollowAction =
+    { username : String
+    , setFollowing : Bool
+    }
+
+
+type Action
+    = Favorite FavoriteAction
+    | Follow FollowAction
+
+
+formHandlers : Form.ServerForms String Action
+formHandlers =
+    Form.initCombined Favorite favoriteForm
+        |> Form.combine Follow followForm
+
+
+viewCommentSection : RouteBuilder.StaticPayload Data ActionData RouteParams -> Article -> Html (Pages.Msg.Msg Msg)
 viewCommentSection app article =
     div [ class "row" ]
         [ div [ class "col-xs-12 col-md-8 offset-md-2" ] <|
@@ -235,7 +337,7 @@ viewCommentSection app article =
         ]
 
 
-viewCommentForm : User -> Article -> Html Msg
+viewCommentForm : User -> Article -> Html (Pages.Msg.Msg Msg)
 viewCommentForm user article =
     form
         [ class "card comment-form"
@@ -260,7 +362,7 @@ viewCommentForm user article =
         ]
 
 
-viewComment : Maybe User -> Article -> Comment -> Html Msg
+viewComment : Maybe User -> Article -> Comment -> Html (Pages.Msg.Msg Msg)
 viewComment currentUser article comment =
     let
         viewCommentActions =
@@ -283,7 +385,8 @@ viewComment currentUser article comment =
         , div [ class "card-footer" ]
             [ a
                 [ class "comment-author"
-                , href ("/profile/" ++ comment.author.username)
+
+                --, href ("/profile/" ++ comment.author.username)
                 ]
                 [ img [ class "comment-author-img", src comment.author.image ] []
                 , text comment.author.username
@@ -302,8 +405,6 @@ type alias Data =
     { article : Article
     , comments : List Comment
     , user : Maybe User
-
-    --    , commentText : String
     }
 
 
@@ -350,19 +451,63 @@ action :
     RouteParams
     -> Server.Request.Parser (BackendTask.BackendTask FatalError.FatalError (Server.Response.Response ActionData ErrorPage.ErrorPage))
 action routeParams =
-    Server.Request.succeed (BackendTask.succeed (Server.Response.render {}))
+    Server.Request.formData formHandlers
+        |> MySession.withUser
+            (\{ token, parsedRequest } ->
+                case parsedRequest of
+                    ( formResponse, parsedForm ) ->
+                        case parsedForm |> Debug.log "formAction" of
+                            Ok (Favorite { slug, setFavorite }) ->
+                                case token of
+                                    Just justToken ->
+                                        (if setFavorite then
+                                            Api.Article.favorite
+
+                                         else
+                                            Api.Article.unfavorite
+                                        )
+                                            { token = justToken
+                                            , slug = slug
+                                            }
+                                            |> BackendTask.map
+                                                (\_ ->
+                                                    \_ ->
+                                                        Server.Response.render {}
+                                                )
+
+                                    Nothing ->
+                                        BackendTask.succeed (\_ -> Server.Response.render {})
+
+                            Ok (Follow { username, setFollowing }) ->
+                                case token of
+                                    Just justToken ->
+                                        (if setFollowing then
+                                            Api.Profile.follow
+
+                                         else
+                                            Api.Profile.unfollow
+                                        )
+                                            { token = justToken
+                                            , username = username
+                                            }
+                                            |> BackendTask.map
+                                                (\_ ->
+                                                    \_ ->
+                                                        Server.Response.render {}
+                                                )
+
+                                    Nothing ->
+                                        BackendTask.succeed (\_ -> Server.Response.render {})
+
+                            Err _ ->
+                                BackendTask.succeed (\_ -> Server.Response.render {})
+            )
 
 
 
 --type Msg
---    | ClickedFavorite User Article
---    | ClickedUnfavorite User Article
 --    | ClickedDeleteArticle User Article
 --    | DeletedArticle (Data Article)
---    | GotAuthor (Data Profile)
---    | ClickedFollow User Profile
---    | ClickedUnfollow User Profile
---    | GotComments (Data (List Comment))
 --    | ClickedDeleteComment User Article Comment
 --    | DeletedComment (Data Int)
 --    | SubmittedCommentForm User Article
@@ -373,29 +518,6 @@ action routeParams =
 --update : Request.With Params -> Msg -> Model -> ( Model, Cmd Msg )
 --update req msg model =
 --    case msg of
---        GotArticle article ->
---            ( { model | article = article }
---            , Cmd.none
---            )
---
---        ClickedFavorite user article ->
---            ( model
---            , Api.Article.favorite
---                { token = user.token
---                , slug = article.slug
---                , onResponse = GotArticle
---                }
---            )
---
---        ClickedUnfavorite user article ->
---            ( model
---            , Api.Article.unfavorite
---                { token = user.token
---                , slug = article.slug
---                , onResponse = GotArticle
---                }
---            )
---
 --        ClickedDeleteArticle user article ->
 --            ( model
 --            , Api.Article.delete
@@ -408,39 +530,6 @@ action routeParams =
 --        DeletedArticle _ ->
 --            ( model
 --            , Utils.Route.navigate req.key Route.Home_
---            )
---
---        GotAuthor profile ->
---            let
---                updateAuthor : Article -> Article
---                updateAuthor article =
---                    case profile of
---                        Api.Data.Success author ->
---                            { article | author = author }
---
---                        _ ->
---                            article
---            in
---            ( { model | article = Api.Data.map updateAuthor model.article }
---            , Cmd.none
---            )
---
---        ClickedFollow user profile ->
---            ( model
---            , Api.Profile.follow
---                { token = user.token
---                , username = profile.username
---                , onResponse = GotAuthor
---                }
---            )
---
---        ClickedUnfollow user profile ->
---            ( model
---            , Api.Profile.unfollow
---                { token = user.token
---                , username = profile.username
---                , onResponse = GotAuthor
---                }
 --            )
 --
 --        UpdatedCommentText text ->
