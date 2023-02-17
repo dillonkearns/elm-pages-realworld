@@ -181,7 +181,19 @@ view maybeUrl shared model app =
 
 toggleFavoriteView : RouteBuilder.StaticPayload Data ActionData RouteParams -> Article -> Html (Pages.Msg.Msg Msg)
 toggleFavoriteView app article =
-    Form.renderHtml [] (\_ -> Nothing) app article (Form.toDynamicTransition ("favorite-" ++ article.slug) favoriteForm)
+    Form.renderHtml []
+        (\_ -> Nothing)
+        app
+        article
+        (Form.toDynamicFetcher
+            (if article.favorited then
+                "unfavorite-" ++ article.slug
+
+             else
+                "favorite-" ++ article.slug
+            )
+            favoriteForm
+        )
 
 
 action :
