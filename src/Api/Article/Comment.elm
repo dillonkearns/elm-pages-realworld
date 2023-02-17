@@ -52,12 +52,13 @@ get :
     }
     -> Cmd msg
 get options =
-    Api.Token.get options.token
-        { url = "https://api.realworld.io/api/articles/" ++ options.articleSlug ++ "/comments"
-        , expect =
-            Api.Data.expectJson options.onResponse
-                (Json.field "comments" (Json.list decoder))
-        }
+    --Api.Token.get options.token
+    --    { url = "https://api.realworld.io/api/articles/" ++ options.articleSlug ++ "/comments"
+    --    , expect =
+    --        Api.Data.expectJson options.onResponse
+    --            (Json.field "comments" (Json.list decoder))
+    --    }
+    Debug.todo ""
 
 
 create :
@@ -79,13 +80,14 @@ create options =
                   )
                 ]
     in
-    Api.Token.post (Just options.token)
-        { url = "https://api.realworld.io/api/articles/" ++ options.articleSlug ++ "/comments"
-        , body = Http.jsonBody body
-        , expect =
-            Api.Data.expectJson options.onResponse
-                (Json.field "comment" decoder)
-        }
+    --Api.Token.post (Just options.token)
+    --    { url = "https://api.realworld.io/api/articles/" ++ options.articleSlug ++ "/comments"
+    --    , body = Http.jsonBody body
+    --    , expect =
+    --        Api.Data.expectJson options.onResponse
+    --            (Json.field "comment" decoder)
+    --    }
+    Debug.todo ""
 
 
 delete :
@@ -96,12 +98,16 @@ delete :
     }
     -> Cmd msg
 delete options =
-    Api.Token.delete (Just options.token)
-        { url =
-            "https://api.realworld.io/api/articles/"
-                ++ options.articleSlug
-                ++ "/comments/"
-                ++ String.fromInt options.commentId
-        , expect =
-            Api.Data.expectJson options.onResponse (Json.succeed options.commentId)
-        }
+    Debug.todo ""
+
+
+
+--Api.Token.delete (Just options.token)
+--{ url =
+--    "https://api.realworld.io/api/articles/"
+--        ++ options.articleSlug
+--        ++ "/comments/"
+--        ++ String.fromInt options.commentId
+--, expect =
+--    Api.Data.expectJson options.onResponse (Json.succeed options.commentId)
+--}

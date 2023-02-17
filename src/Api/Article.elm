@@ -2,6 +2,7 @@ module Api.Article exposing
     ( Article, decoder
     , Listing, updateArticle
     , list
+    , get
     --,feed
     --, get, create, update, delete
     --, favorite, unfavorite
@@ -119,19 +120,21 @@ list options =
 --        }
 --
 --
---get :
---    { slug : String
---    , token : Maybe Token
---    , onResponse : Data Article -> msg
---    }
---    -> Cmd msg
---get options =
---    Api.Token.get options.token
---        { url = "https://api.realworld.io/api/articles/" ++ options.slug
---        , expect =
---            Api.Data.expectJson options.onResponse
---                (Json.field "article" decoder)
---        }
+
+
+get :
+    { slug : String
+    , token : Maybe Token
+    }
+    -> BackendTask FatalError Article
+get options =
+    Api.Token.get options.token
+        { url = "https://api.realworld.io/api/articles/" ++ options.slug
+        , expect = Json.field "article" decoder
+        }
+
+
+
 --
 --
 --create :

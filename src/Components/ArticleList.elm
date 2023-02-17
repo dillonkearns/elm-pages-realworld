@@ -5,8 +5,9 @@ import Api.Data exposing (Data)
 import Api.User exposing (User)
 import Components.IconButton as IconButton
 import Html exposing (..)
-import Html.Attributes exposing (alt, class, classList, href, src)
+import Html.Attributes exposing (alt, class, classList, src)
 import Html.Events as Events
+import Route
 import Utils.Maybe
 import Utils.Time
 
@@ -60,11 +61,18 @@ viewArticlePreview :
 viewArticlePreview options article =
     div [ class "article-preview" ]
         [ div [ class "article-meta" ]
-            [ a [ href ("/profile/" ++ article.author.username) ]
+            [ a
+                [--href ("/profile/" ++ article.author.username)
+                ]
                 [ img [ src article.author.image, alt article.author.username ] []
                 ]
             , div [ class "info" ]
-                [ a [ class "author", href ("/profile/" ++ article.author.username) ] [ text article.author.username ]
+                [ a
+                    [ class "author"
+
+                    --, href ("/profile/" ++ article.author.username)
+                    ]
+                    [ text article.author.username ]
                 , span [ class "date" ] [ text (Utils.Time.formatDate article.createdAt) ]
                 ]
             , div [ class "pull-xs-right" ]
@@ -94,18 +102,21 @@ viewArticlePreview options article =
                                 }
                 ]
             ]
-        , a [ class "preview-link", href ("/article/" ++ article.slug) ]
-            [ h1 [] [ text article.title ]
-            , p [] [ text article.description ]
-            , span [] [ text "Read more..." ]
-            , if List.isEmpty article.tags then
-                text ""
+        , Route.Article__Slug_ { slug = article.slug }
+            |> Route.link
+                [ class "preview-link"
+                ]
+                [ h1 [] [ text article.title ]
+                , p [] [ text article.description ]
+                , span [] [ text "Read more..." ]
+                , if List.isEmpty article.tags then
+                    text ""
 
-              else
-                ul [ class "tag-list" ]
-                    (List.map
-                        (\tag -> li [ class "tag-default tag-pill tag-outline" ] [ text tag ])
-                        article.tags
-                    )
-            ]
+                  else
+                    ul [ class "tag-list" ]
+                        (List.map
+                            (\tag -> li [ class "tag-default tag-pill tag-outline" ] [ text tag ])
+                            article.tags
+                        )
+                ]
         ]
