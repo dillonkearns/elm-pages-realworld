@@ -70,26 +70,28 @@ viewArticlePreview options article =
             , div [ class "pull-xs-right" ]
                 [ Utils.Maybe.view options.user <|
                     \user ->
-                        --if user.username == article.author.username then
-                        text ""
+                        if user.username == article.author.username then
+                            text ""
+                            --   TODO adapt for elm-pages Forms
 
-                --     --   TODO adapt for elm-pages Forms
-                --else if article.favorited then
-                --    IconButton.view
-                --        { color = IconButton.FilledGreen
-                --        , icon = IconButton.Heart
-                --        , label = " " ++ String.fromInt article.favoritesCount
-                --        , onClick = options.onUnfavorite user article
-                --        }
-                --
-                --     --   TODO adapt for elm-pages Forms
-                --else
-                --    IconButton.view
-                --        { color = IconButton.OutlinedGreen
-                --        , icon = IconButton.Heart
-                --        , label = " " ++ String.fromInt article.favoritesCount
-                --        , onClick = options.onFavorite user article
-                --        }
+                        else if article.favorited then
+                            IconButton.view
+                                { color = IconButton.FilledGreen
+                                , icon = IconButton.Heart
+                                , label = " " ++ String.fromInt article.favoritesCount
+
+                                --, onClick = options.onUnfavorite user article
+                                }
+                            --   TODO adapt for elm-pages Forms
+
+                        else
+                            IconButton.view
+                                { color = IconButton.OutlinedGreen
+                                , icon = IconButton.Heart
+                                , label = " " ++ String.fromInt article.favoritesCount
+
+                                --, onClick = options.onFavorite user article
+                                }
                 ]
             ]
         , a [ class "preview-link", href ("/article/" ++ article.slug) ]

@@ -23,7 +23,8 @@ view :
     { color : Color
     , icon : Icon
     , label : String
-    , onClick : msg
+
+    --, onClick : msg
     }
     -> Html msg
 view options =
@@ -59,8 +60,8 @@ view options =
                     "btn-secondary"
     in
     button
-        [ Events.onClick options.onClick
-        , class ("btn btn-sm " ++ toButtonClass options.color)
+        [ --Events.onClick options.onClick
+          class ("btn btn-sm " ++ toButtonClass options.color)
         ]
         [ i [ class (toIconClass options.icon) ] []
         , text options.label
