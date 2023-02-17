@@ -17,7 +17,9 @@ import FatalError
 import Head
 import Html exposing (..)
 import Html.Attributes exposing (attribute, class, href, placeholder, src)
+import Layout
 import Markdown
+import MySession
 import Pages.Msg
 import Pages.PageUrl
 import Path
@@ -89,8 +91,9 @@ subscriptions maybePageUrl routeParams path sharedModel model =
 
 type alias Data =
     { article : Article
+    , comments : List Comment
+    , user : Maybe User
 
-    --    , comments : Data (List Comment)
     --    , commentText : String
     }
 
@@ -104,24 +107,29 @@ data :
     -> Server.Request.Parser (BackendTask.BackendTask FatalError.FatalError (Server.Response.Response Data ErrorPage.ErrorPage))
 data routeParams =
     Server.Request.succeed
-        (Api.Article.get
-            { slug = routeParams.slug
-            , token = Nothing --shared.user |> Maybe.map .token
-
-            --, onResponse = GotArticle
-            }
-            --        , Api.Article.Comment.get
-            --            { token = shared.user |> Maybe.map .token
-            --            , articleSlug = params.slug
-            --            , onResponse = GotComments
-            --            }
-            |> BackendTask.map
-                (\article ->
-                    Server.Response.render
-                        { article = article
+        ()
+        |> MySession.withUser
+            (\{ token } ->
+                BackendTask.map2
+                    (\article comments ->
+                        \user ->
+                            Server.Response.render
+                                { article = article
+                                , comments = comments
+                                , user = user
+                                }
+                    )
+                    (Api.Article.get
+                        { slug = routeParams.slug
+                        , token = token
                         }
-                )
-        )
+                    )
+                    (Api.Article.Comment.get
+                        { token = token
+                        , articleSlug = routeParams.slug
+                        }
+                    )
+            )
 
 
 head : RouteBuilder.StaticPayload Data ActionData RouteParams -> List Head.Tag
@@ -138,11 +146,12 @@ view :
 view maybeUrl shared model app =
     { title = app.data.article.title
     , body =
-        [ viewArticle shared model app.data.article
+        [ viewArticle app app.data.article
             |> Html.map (\_ -> Pages.Msg.UserMsg NoOp)
 
         --|> Html.map Pages.Msg.UserMsg
         ]
+            |> Layout.view app.data.user
     }
 
 
@@ -154,39 +163,10 @@ action routeParams =
 
 
 
--- INIT
---type alias Model =
---    { article : Data Article
---    , comments : Data (List Comment)
---    , commentText : String
---    }
---init : Shared.Model -> Request.With Params -> ( Model, Cmd Msg )
---init shared { params } =
---    ( { article = Api.Data.Loading
---      , comments = Api.Data.Loading
---      , commentText = ""
---      }
---    , Cmd.batch
---        [ Api.Article.get
---            { slug = params.slug
---            , token = shared.user |> Maybe.map .token
---            , onResponse = GotArticle
---            }
---        , Api.Article.Comment.get
---            { token = shared.user |> Maybe.map .token
---            , articleSlug = params.slug
---            , onResponse = GotComments
---            }
---        ]
---    )
---
---
---
 ---- UPDATE
 --
 --
 --type Msg
---    = GotArticle (Data Article)
 --    | ClickedFavorite User Article
 --    | ClickedUnfavorite User Article
 --    | ClickedDeleteArticle User Article
@@ -275,11 +255,6 @@ action routeParams =
 --                }
 --            )
 --
---        GotComments comments ->
---            ( { model | comments = comments }
---            , Cmd.none
---            )
---
 --        UpdatedCommentText text ->
 --            ( { model | commentText = text }
 --            , Cmd.none
@@ -328,18 +303,15 @@ action routeParams =
 --            ( { model | comments = Api.Data.map removeComment model.comments }
 --            , Cmd.none
 --            )
--- VIEW
---view : Shared.Model -> Model -> View Msg
---view shared model =
+--viewArticle : Shared.Model -> Model -> Article -> Html Msg
 
 
-viewArticle : Shared.Model -> Model -> Article -> Html Msg
-viewArticle shared model article =
+viewArticle app article =
     div [ class "article-page" ]
         [ div [ class "banner" ]
             [ div [ class "container" ]
                 [ h1 [] [ text article.title ]
-                , viewArticleMeta shared model article
+                , viewArticleMeta app article
                 ]
             ]
         , div [ class "container page" ]
@@ -357,14 +329,17 @@ viewArticle shared model article =
                         )
                 ]
             , hr [] []
-            , div [ class "article-actions" ] [ viewArticleMeta shared model article ]
-            , viewCommentSection shared model article
+            , div [ class "article-actions" ] [ viewArticleMeta app article ]
+            , viewCommentSection app app.data.comments article
             ]
         ]
 
 
-viewArticleMeta : Shared.Model -> Model -> Article -> Html Msg
-viewArticleMeta shared model article =
+
+--viewArticleMeta : Shared.Model -> Model -> Article -> Html Msg
+
+
+viewArticleMeta app article =
     div [ class "article-meta" ] <|
         List.concat
             [ [ a [ href ("/profile/" ++ article.author.username) ]
@@ -375,7 +350,7 @@ viewArticleMeta shared model article =
                     , span [ class "date" ] [ text (Utils.Time.formatDate article.createdAt) ]
                     ]
               ]
-            , case shared.user of
+            , case app.data.user of
                 Just user ->
                     viewControls article user
 
@@ -437,30 +412,27 @@ viewControls article user =
         ]
 
 
-viewCommentSection : Shared.Model -> Model -> Article -> Html Msg
-viewCommentSection shared model article =
+
+--viewCommentSection : Shared.Model -> Model -> Article -> Html Msg
+
+
+viewCommentSection app comments article =
     div [ class "row" ]
         [ div [ class "col-xs-12 col-md-8 offset-md-2" ] <|
             List.concat
-                [ case shared.user of
+                [ case app.data.user of
                     Just user ->
-                        [ viewCommentForm model user article ]
+                        [ viewCommentForm user article ]
 
                     Nothing ->
                         []
-
-                --, case model.comments of
-                --    Api.Data.Success comments ->
-                --        List.map (viewComment shared.user article) comments
-                --
-                --    _ ->
-                --        []
+                , List.map (viewComment app.data.user article) comments
                 ]
         ]
 
 
-viewCommentForm : Model -> User -> Article -> Html Msg
-viewCommentForm model user article =
+viewCommentForm : User -> Article -> Html Msg
+viewCommentForm user article =
     form
         [ class "card comment-form"
 

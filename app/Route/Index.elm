@@ -21,6 +21,8 @@ import FatalError
 import Head
 import Html exposing (..)
 import Html.Attributes exposing (class, classList)
+import Layout
+import MySession
 import Pages.Msg
 import Pages.PageUrl
 import Path
@@ -117,40 +119,22 @@ data routeParams =
     --                |> Maybe.withDefault Global
     Server.Request.succeed
         ()
-        |> Server.Session.withSession
-            { name = "realworld-user"
-            , secrets = BackendTask.succeed [ "not-so-secret" ]
-            , options =
-                Server.SetCookie.initOptions
-                    |> Server.SetCookie.withPath "/"
-            }
-            (\() sessionResult ->
-                let
-                    okSession : Server.Session.Session
-                    okSession =
-                        sessionResult
-                            |> Result.withDefault Server.Session.empty
-                            |> Debug.log "session"
-
-                    token : Maybe Token
-                    token =
-                        okSession |> Token.fromSession
-                in
-                BackendTask.map3
-                    (\tags listing maybeUser ->
-                        ( okSession
-                        , Server.Response.render
-                            { tags = tags
-                            , activeTab =
-                                -- TODO check query params for active tab
-                                Global
-                            , page =
-                                -- TODO get page from query params
-                                1
-                            , listing = listing
-                            , user = maybeUser
-                            }
-                        )
+        |> MySession.withUser
+            (\{ token } ->
+                BackendTask.map2
+                    (\tags listing ->
+                        \user ->
+                            Server.Response.render
+                                { tags = tags
+                                , activeTab =
+                                    -- TODO check query params for active tab
+                                    Global
+                                , page =
+                                    -- TODO get page from query params
+                                    1
+                                , listing = listing
+                                , user = user
+                                }
                     )
                     Api.Article.Tag.list
                     (Api.Article.list
@@ -161,7 +145,6 @@ data routeParams =
                         , token = token
                         }
                     )
-                    (Api.User.getUser token)
             )
 
 
@@ -179,42 +162,30 @@ view :
 view maybeUrl shared model app =
     { title = ""
     , body =
-        [ div [ class "layout" ]
-            [ Components.Navbar.view
-                { user = app.data.user
-                , currentRoute = Route.Index
-
-                --Utils.Route.fromUrl req.url
-                --, onSignOut = toMsg MenuClicked --toMsg ClickedSignOut
-                , onSignOut = NoOp |> Pages.Msg.UserMsg
-                }
-            , div [ class "page" ]
-                [ div [ class "home-page" ]
-                    [ div [ class "banner" ]
-                        [ div [ class "container" ]
-                            [ h1 [ class "logo-font" ] [ text "conduit" ]
-                            , p [] [ text "A place to share your knowledge." ]
-                            ]
-                        ]
-                    , div [ class "container page" ]
-                        [ div [ class "row" ]
-                            [ div [ class "col-md-9" ] <|
-                                (viewTabs app.data.user app.data.activeTab
-                                    :: Components.ArticleList.view
-                                        { user = app.data.user
-                                        , articleListing = app.data.listing
-                                        }
-                                )
-                            , div [ class "col-md-3" ]
-                                [ viewTags app.data.tags
-                                ]
-                            ]
+        [ div [ class "home-page" ]
+            [ div [ class "banner" ]
+                [ div [ class "container" ]
+                    [ h1 [ class "logo-font" ] [ text "conduit" ]
+                    , p [] [ text "A place to share your knowledge." ]
+                    ]
+                ]
+            , div [ class "container page" ]
+                [ div [ class "row" ]
+                    [ div [ class "col-md-9" ] <|
+                        (viewTabs app.data.user app.data.activeTab
+                            :: Components.ArticleList.view
+                                { user = app.data.user
+                                , articleListing = app.data.listing
+                                }
+                        )
+                    , div [ class "col-md-3" ]
+                        [ viewTags app.data.tags
                         ]
                     ]
                 ]
             ]
-        , Components.Footer.view
         ]
+            |> Layout.view app.data.user
     }
 
 

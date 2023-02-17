@@ -15,6 +15,8 @@ module Api.Article.Comment exposing
 import Api.Data exposing (Data)
 import Api.Profile exposing (Profile)
 import Api.Token exposing (Token)
+import BackendTask exposing (BackendTask)
+import FatalError exposing (FatalError)
 import Http
 import Iso8601
 import Json.Decode as Json
@@ -48,17 +50,13 @@ decoder =
 get :
     { token : Maybe Token
     , articleSlug : String
-    , onResponse : Data (List Comment) -> msg
     }
-    -> Cmd msg
+    -> BackendTask FatalError (List Comment)
 get options =
-    --Api.Token.get options.token
-    --    { url = "https://api.realworld.io/api/articles/" ++ options.articleSlug ++ "/comments"
-    --    , expect =
-    --        Api.Data.expectJson options.onResponse
-    --            (Json.field "comments" (Json.list decoder))
-    --    }
-    Debug.todo ""
+    Api.Token.get options.token
+        { url = "https://api.realworld.io/api/articles/" ++ options.articleSlug ++ "/comments"
+        , expect = Json.field "comments" (Json.list decoder)
+        }
 
 
 create :
