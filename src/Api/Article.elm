@@ -95,16 +95,6 @@ itemsPerPage =
     25
 
 
-
---list :
---    { token : Maybe Token
---    , filters : Filters
---    , page : Int
---    , onResponse : Data Listing -> msg
---    }
---    -> Cmd msg
-
-
 list : { a | token : Maybe Token, page : Int, filters : Filters } -> BackendTask FatalError Listing
 list options =
     Api.Token.get options.token
