@@ -1,7 +1,7 @@
 module Api.User exposing
     ( User
     , decoder, encode
-    , authentication, update
+    , authentication, registration, update
     ,  getUser
        --, authentication, registration, update
 
@@ -94,38 +94,35 @@ getUser maybeToken =
             BackendTask.succeed Nothing
 
 
-
---registration :
---    { user :
---        { user
---            | username : String
---            , email : String
---            , password : String
---        }
---    , onResponse : Data User -> msg
---    }
---    -> Cmd msg
---registration options =
---    let
---        body : Json.Value
---        body =
---            Encode.object
---                [ ( "user"
---                  , Encode.object
---                        [ ( "username", Encode.string options.user.username )
---                        , ( "email", Encode.string options.user.email )
---                        , ( "password", Encode.string options.user.password )
---                        ]
---                  )
---                ]
---    in
---    Http.post
---        { url = "https://api.realworld.io/api/users"
---        , body = Http.jsonBody body
---        , expect =
---            Api.Data.expectJson options.onResponse
---                (Json.field "user" decoder)
---        }
+registration :
+    { user :
+        { user
+            | username : String
+            , email : String
+            , password : String
+        }
+    }
+    -> BackendTask FatalError (Result (List String) User)
+registration options =
+    let
+        body : Json.Value
+        body =
+            Encode.object
+                [ ( "user"
+                  , Encode.object
+                        [ ( "username", Encode.string options.user.username )
+                        , ( "email", Encode.string options.user.email )
+                        , ( "password", Encode.string options.user.password )
+                        ]
+                  )
+                ]
+    in
+    Api.Token.requestWithErrors "POST"
+        (BackendTask.Http.jsonBody body)
+        Nothing
+        { url = "https://api.realworld.io/api/users"
+        , expect = Json.field "user" decoder
+        }
 
 
 update :
