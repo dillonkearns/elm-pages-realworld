@@ -118,12 +118,7 @@ view maybeUrl sharedModel model app =
 
                             _ ->
                                 text ""
-                        , Form.renderHtml
-                            []
-                            (\_ -> Nothing)
-                            app
-                            ()
-                            (Form.toDynamicTransition "form" form)
+                        , Form.renderHtml [] (\_ -> Nothing) app () (Form.toDynamicTransition "form" form)
                         ]
                     ]
                 ]

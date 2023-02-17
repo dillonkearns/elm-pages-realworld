@@ -15,6 +15,7 @@ import Utils.Time
 view :
     { user : Maybe User
     , articleListing : Api.Article.Listing
+    , toggleFavoriteView : Article -> Html msg
 
     --, onFavorite : User -> Article -> msg
     --, onUnfavorite : User -> Article -> msg
@@ -52,6 +53,7 @@ view options =
 viewArticlePreview :
     { options
         | user : Maybe User
+        , toggleFavoriteView : Article -> Html msg
 
         --, onFavorite : User -> Article -> msg
         --, onUnfavorite : User -> Article -> msg
@@ -80,26 +82,9 @@ viewArticlePreview options article =
                     \user ->
                         if user.username == article.author.username then
                             text ""
-                            --   TODO adapt for elm-pages Forms
-
-                        else if article.favorited then
-                            IconButton.view
-                                { color = IconButton.FilledGreen
-                                , icon = IconButton.Heart
-                                , label = " " ++ String.fromInt article.favoritesCount
-
-                                --, onClick = options.onUnfavorite user article
-                                }
-                            --   TODO adapt for elm-pages Forms
 
                         else
-                            IconButton.view
-                                { color = IconButton.OutlinedGreen
-                                , icon = IconButton.Heart
-                                , label = " " ++ String.fromInt article.favoritesCount
-
-                                --, onClick = options.onFavorite user article
-                                }
+                            options.toggleFavoriteView article
                 ]
             ]
         , Route.Article__Slug_ { slug = article.slug }

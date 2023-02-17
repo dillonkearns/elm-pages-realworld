@@ -3,6 +3,7 @@ module Api.Article exposing
     , Listing, updateArticle
     , list
     , get
+    , favorite, unfavorite
     --,feed
     --, get, create, update, delete
     --, favorite, unfavorite
@@ -221,37 +222,26 @@ get options =
 --            Api.Data.expectJson options.onResponse
 --                (Json.field "article" decoder)
 --        }
---
---
---favorite :
---    { token : Token
---    , slug : String
---    , onResponse : Data Article -> msg
---    }
---    -> Cmd msg
---favorite options =
---    Api.Token.post (Just options.token)
---        { url = "https://api.realworld.io/api/articles/" ++ options.slug ++ "/favorite"
---        , body = Http.emptyBody
---        , expect =
---            Api.Data.expectJson options.onResponse
---                (Json.field "article" decoder)
---        }
---
---
---unfavorite :
---    { token : Token
---    , slug : String
---    , onResponse : Data Article -> msg
---    }
---    -> Cmd msg
---unfavorite options =
---    Api.Token.delete (Just options.token)
---        { url = "https://api.realworld.io/api/articles/" ++ options.slug ++ "/favorite"
---        , expect =
---            Api.Data.expectJson options.onResponse
---                (Json.field "article" decoder)
---        }
+
+
+favorite : { token : Token, slug : String } -> BackendTask FatalError Article
+favorite options =
+    Api.Token.post (Just options.token)
+        { url = "https://api.realworld.io/api/articles/" ++ options.slug ++ "/favorite"
+        , body = BackendTask.Http.emptyBody
+        , expect = Json.field "article" decoder
+        }
+
+
+unfavorite : { token : Token, slug : String } -> BackendTask FatalError Article
+unfavorite options =
+    Api.Token.delete (Just options.token)
+        { url = "https://api.realworld.io/api/articles/" ++ options.slug ++ "/favorite"
+        , expect = Json.field "article" decoder
+        }
+
+
+
 -- INTERNALS
 
 

@@ -1,23 +1,19 @@
-module Route.Index exposing (ActionData, Data, route, RouteParams, Msg, Model)
-
-{-|
-
-@docs ActionData, Data, route, RouteParams, Msg, Model
-
--}
+module Route.Index exposing (ActionData, Data, Model, Msg, RouteParams, route)
 
 import Api.Article exposing (Article)
 import Api.Article.Filters as Filters
 import Api.Article.Tag exposing (Tag)
-import Api.Token as Token exposing (Token)
 import Api.User exposing (User)
 import BackendTask
 import Components.ArticleList
-import Components.Footer
-import Components.Navbar
+import Components.IconButton as IconButton
 import Effect
 import ErrorPage
 import FatalError
+import Form
+import Form.Field
+import Form.Validation
+import Form.Value
 import Head
 import Html exposing (..)
 import Html.Attributes exposing (class, classList)
@@ -27,12 +23,9 @@ import Pages.Msg
 import Pages.PageUrl
 import Path
 import Platform.Sub
-import Route
 import RouteBuilder
 import Server.Request
 import Server.Response
-import Server.Session
-import Server.SetCookie
 import Shared
 import Utils.Maybe
 import View exposing (View)
@@ -176,6 +169,7 @@ view maybeUrl shared model app =
                             :: Components.ArticleList.view
                                 { user = app.data.user
                                 , articleListing = app.data.listing
+                                , toggleFavoriteView = toggleFavoriteView app
                                 }
                         )
                     , div [ class "col-md-3" ]
@@ -189,11 +183,45 @@ view maybeUrl shared model app =
     }
 
 
+toggleFavoriteView : RouteBuilder.StaticPayload Data ActionData RouteParams -> Article -> Html (Pages.Msg.Msg Msg)
+toggleFavoriteView app article =
+    Form.renderHtml [] (\_ -> Nothing) app article (Form.toDynamicTransition ("favorite-" ++ article.slug) favoriteForm)
+
+
 action :
     RouteParams
     -> Server.Request.Parser (BackendTask.BackendTask FatalError.FatalError (Server.Response.Response ActionData ErrorPage.ErrorPage))
 action routeParams =
-    Server.Request.succeed (BackendTask.succeed (Server.Response.render {}))
+    Server.Request.formData formHandlers
+        |> MySession.withUser
+            (\{ token, parsedRequest } ->
+                case parsedRequest of
+                    ( formResponse, parsedForm ) ->
+                        case parsedForm of
+                            Ok (Action { slug, setFavorite }) ->
+                                case token of
+                                    Just justToken ->
+                                        (if setFavorite then
+                                            Api.Article.favorite
+
+                                         else
+                                            Api.Article.unfavorite
+                                        )
+                                            { token = justToken
+                                            , slug = slug
+                                            }
+                                            |> BackendTask.map
+                                                (\_ ->
+                                                    \_ ->
+                                                        Server.Response.render {}
+                                                )
+
+                                    Nothing ->
+                                        BackendTask.succeed (\_ -> Server.Response.render {})
+
+                            Err _ ->
+                                BackendTask.succeed (\_ -> Server.Response.render {})
+            )
 
 
 
@@ -244,10 +272,7 @@ type Tab
 -- UPDATE
 --type Msg
 --    = SelectedTab Tab
---    | ClickedFavorite User Article
---    | ClickedUnfavorite User Article
 --    | ClickedPage Int
---    | UpdatedArticle (Data Article)
 --update : Shared.Model -> Msg -> Model -> ( Model, Cmd Msg )
 --update shared msg model =
 --    case msg of
@@ -264,25 +289,6 @@ type Tab
 --            ( newModel
 --            , fetchArticlesForTab shared newModel
 --            )
---
---        ClickedFavorite user article ->
---            ( model
---            , Api.Article.favorite
---                { token = user.token
---                , slug = article.slug
---                , onResponse = UpdatedArticle
---                }
---            )
---
---        ClickedUnfavorite user article ->
---            ( model
---            , Api.Article.unfavorite
---                { token = user.token
---                , slug = article.slug
---                , onResponse = UpdatedArticle
---                }
---            )
---
 --        ClickedPage page_ ->
 --            let
 --                newModel : Model
@@ -295,20 +301,6 @@ type Tab
 --            ( newModel
 --            , fetchArticlesForTab shared newModel
 --            )
---
---        UpdatedArticle (Api.Data.Success article) ->
---            ( { model
---                | listing =
---                    Api.Data.map (Api.Article.updateArticle article)
---                        model.listing
---              }
---            , Cmd.none
---            )
---
---        UpdatedArticle _ ->
---            ( model, Cmd.none )
---
---
 -- VIEW
 
 
@@ -365,3 +357,62 @@ viewTags tags =
                 )
                 tags
         ]
+
+
+favoriteForm : Form.HtmlForm String FavoriteAction Article Msg
+favoriteForm =
+    (\slug setFavorite ->
+        { combine =
+            Form.Validation.succeed FavoriteAction
+                |> Form.Validation.andMap slug
+                |> Form.Validation.andMap setFavorite
+        , view =
+            \formState ->
+                let
+                    article : Article
+                    article =
+                        formState.data
+
+                    elipsesIfInProgress : String
+                    elipsesIfInProgress =
+                        if formState.isTransitioning then
+                            "..."
+
+                        else
+                            ""
+                in
+                [ if formState.data.favorited then
+                    IconButton.view
+                        { color = IconButton.FilledGreen
+                        , icon = IconButton.Heart
+                        , label = " " ++ String.fromInt article.favoritesCount ++ elipsesIfInProgress
+                        }
+
+                  else
+                    IconButton.view
+                        { color = IconButton.OutlinedGreen
+                        , icon = IconButton.Heart
+                        , label = " " ++ String.fromInt article.favoritesCount ++ elipsesIfInProgress
+                        }
+                ]
+        }
+    )
+        |> Form.init
+        |> Form.hiddenField "slug" (Form.Field.required "Required" Form.Field.text |> Form.Field.withInitialValue (.slug >> Form.Value.string))
+        |> Form.hiddenField "set-favorite" (Form.Field.checkbox |> Form.Field.withInitialValue (.favorited >> not >> Form.Value.bool))
+        |> Form.hiddenKind ( "kind", "favorite" ) "Expected kind."
+
+
+type alias FavoriteAction =
+    { slug : String
+    , setFavorite : Bool
+    }
+
+
+type Action
+    = Action FavoriteAction
+
+
+formHandlers : Form.ServerForms String Action
+formHandlers =
+    Form.initCombined Action favoriteForm
