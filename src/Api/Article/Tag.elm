@@ -12,6 +12,6 @@ type alias Tag =
 
 list : BackendTask.BackendTask FatalError (List String)
 list =
-    BackendTask.Http.getJson "https://conduit.productionready.io/api/tags"
+    BackendTask.Http.getJson "https://api.realworld.io/api/tags"
         (Json.field "tags" (Json.list Json.string))
         |> BackendTask.allowFatal

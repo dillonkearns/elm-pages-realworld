@@ -47,7 +47,7 @@ decoder =
 --    -> Cmd msg
 --get options =
 --    Api.Token.get options.token
---        { url = "https://conduit.productionready.io/api/profiles/" ++ options.username
+--        { url = "https://api.realworld.io/api/profiles/" ++ options.username
 --        , expect =
 --            Api.Data.expectJson options.onResponse
 --                (Json.field "profile" decoder)
@@ -62,7 +62,7 @@ decoder =
 --    -> Cmd msg
 --follow options =
 --    Api.Token.post (Just options.token)
---        { url = "https://conduit.productionready.io/api/profiles/" ++ options.username ++ "/follow"
+--        { url = "https://api.realworld.io/api/profiles/" ++ options.username ++ "/follow"
 --        , body = Http.emptyBody
 --        , expect =
 --            Api.Data.expectJson options.onResponse
@@ -78,7 +78,7 @@ decoder =
 --    -> Cmd msg
 --unfollow options =
 --    Api.Token.delete (Just options.token)
---        { url = "https://conduit.productionready.io/api/profiles/" ++ options.username ++ "/follow"
+--        { url = "https://api.realworld.io/api/profiles/" ++ options.username ++ "/follow"
 --        , expect =
 --            Api.Data.expectJson options.onResponse
 --                (Json.field "profile" decoder)

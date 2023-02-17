@@ -98,7 +98,7 @@ itemsPerPage =
 list : { a | token : Maybe Token, page : Int, filters : Filters } -> BackendTask FatalError Listing
 list options =
     Api.Token.get options.token
-        { url = "https://conduit.productionready.io/api/articles/" ++ Filters.toQueryString options.page options.filters
+        { url = "https://api.realworld.io/api/articles/" ++ Filters.toQueryString options.page options.filters
         , expect = paginatedDecoder options.page
         }
 
@@ -112,7 +112,7 @@ list options =
 --    -> Cmd msg
 --feed options =
 --    Api.Token.get (Just options.token)
---        { url = "https://conduit.productionready.io/api/articles/feed" ++ Filters.pageQueryParameters options.page
+--        { url = "https://api.realworld.io/api/articles/feed" ++ Filters.pageQueryParameters options.page
 --        , expect =
 --            Api.Data.expectJson options.onResponse
 --                (paginatedDecoder options.page)
@@ -127,7 +127,7 @@ list options =
 --    -> Cmd msg
 --get options =
 --    Api.Token.get options.token
---        { url = "https://conduit.productionready.io/api/articles/" ++ options.slug
+--        { url = "https://api.realworld.io/api/articles/" ++ options.slug
 --        , expect =
 --            Api.Data.expectJson options.onResponse
 --                (Json.field "article" decoder)
@@ -162,7 +162,7 @@ list options =
 --                ]
 --    in
 --    Api.Token.post (Just options.token)
---        { url = "https://conduit.productionready.io/api/articles"
+--        { url = "https://api.realworld.io/api/articles"
 --        , body = Http.jsonBody body
 --        , expect =
 --            Api.Data.expectJson options.onResponse
@@ -197,7 +197,7 @@ list options =
 --                ]
 --    in
 --    Api.Token.put (Just options.token)
---        { url = "https://conduit.productionready.io/api/articles/" ++ options.slug
+--        { url = "https://api.realworld.io/api/articles/" ++ options.slug
 --        , body = Http.jsonBody body
 --        , expect =
 --            Api.Data.expectJson options.onResponse
@@ -213,7 +213,7 @@ list options =
 --    -> Cmd msg
 --delete options =
 --    Api.Token.delete (Just options.token)
---        { url = "https://conduit.productionready.io/api/articles/" ++ options.slug
+--        { url = "https://api.realworld.io/api/articles/" ++ options.slug
 --        , expect =
 --            Api.Data.expectJson options.onResponse
 --                (Json.field "article" decoder)
@@ -228,7 +228,7 @@ list options =
 --    -> Cmd msg
 --favorite options =
 --    Api.Token.post (Just options.token)
---        { url = "https://conduit.productionready.io/api/articles/" ++ options.slug ++ "/favorite"
+--        { url = "https://api.realworld.io/api/articles/" ++ options.slug ++ "/favorite"
 --        , body = Http.emptyBody
 --        , expect =
 --            Api.Data.expectJson options.onResponse
@@ -244,7 +244,7 @@ list options =
 --    -> Cmd msg
 --unfavorite options =
 --    Api.Token.delete (Just options.token)
---        { url = "https://conduit.productionready.io/api/articles/" ++ options.slug ++ "/favorite"
+--        { url = "https://api.realworld.io/api/articles/" ++ options.slug ++ "/favorite"
 --        , expect =
 --            Api.Data.expectJson options.onResponse
 --                (Json.field "article" decoder)

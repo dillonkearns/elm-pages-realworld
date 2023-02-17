@@ -74,7 +74,7 @@ authentication user =
                 ]
     in
     BackendTask.Http.post
-        "https://conduit.productionready.io/api/users/login"
+        "https://api.realworld.io/api/users/login"
         (BackendTask.Http.jsonBody body)
         (BackendTask.Http.expectJson
             (Json.field "user" decoder)
@@ -124,7 +124,7 @@ getUser maybeToken =
 --                ]
 --    in
 --    Http.post
---        { url = "https://conduit.productionready.io/api/users"
+--        { url = "https://api.realworld.io/api/users"
 --        , body = Http.jsonBody body
 --        , expect =
 --            Api.Data.expectJson options.onResponse
@@ -170,7 +170,7 @@ getUser maybeToken =
 --                ]
 --    in
 --    Api.Token.put (Just options.token)
---        { url = "https://conduit.productionready.io/api/user"
+--        { url = "https://api.realworld.io/api/user"
 --        , body = Http.jsonBody body
 --        , expect =
 --            Api.Data.expectJson options.onResponse
