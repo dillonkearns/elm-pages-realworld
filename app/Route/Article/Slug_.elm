@@ -24,6 +24,7 @@ import Pages.Msg
 import Pages.PageUrl
 import Path
 import Platform.Sub
+import Route
 import RouteBuilder
 import Server.Request
 import Server.Response
@@ -181,6 +182,13 @@ viewControls app article user =
             [ i [ class "ion-edit" ] []
             , text "Edit article"
             ]
+        , Form.renderHtml
+            [ style "display" "inline"
+            ]
+            (\_ -> Nothing)
+            app
+            ()
+            (Form.toDynamicTransition "delete-article" deleteArticleForm)
         ]
 
     else
@@ -315,6 +323,32 @@ deleteCommentForm =
         |> Form.hiddenKind ( "kind", "delete-comment" ) "Expected kind."
 
 
+deleteArticleForm : Form.HtmlForm String () input Msg
+deleteArticleForm =
+    { combine =
+        Form.Validation.succeed ()
+    , view =
+        \formState ->
+            let
+                ellipsesIfInProgress : String
+                ellipsesIfInProgress =
+                    if formState.isTransitioning then
+                        "..."
+
+                    else
+                        ""
+            in
+            [ IconButton.view
+                { color = IconButton.OutlinedRed
+                , icon = IconButton.Trash
+                , label = "Delete article" ++ ellipsesIfInProgress
+                }
+            ]
+    }
+        |> Form.init
+        |> Form.hiddenKind ( "kind", "delete-article" ) "Expected kind."
+
+
 commentForm : Form.HtmlForm String String User Msg
 commentForm =
     (\comment ->
@@ -373,6 +407,7 @@ type Action
     | Follow FollowAction
     | SubmitComment String
     | DeleteComment Int
+    | DeleteArticle
 
 
 formHandlers : Form.ServerForms String Action
@@ -381,6 +416,7 @@ formHandlers =
         |> Form.combine Follow followForm
         |> Form.combine SubmitComment commentForm
         |> Form.combine DeleteComment deleteCommentForm
+        |> Form.combine (\() -> DeleteArticle) deleteArticleForm
 
 
 viewCommentSection : RouteBuilder.StaticPayload Data ActionData RouteParams -> Article -> Html (Pages.Msg.Msg Msg)
@@ -400,16 +436,13 @@ viewCommentSection app article =
 
                     Nothing ->
                         []
-                , List.map (viewComment app app.data.user article) app.data.comments
+                , List.map (viewComment app app.data.user) app.data.comments
                 ]
         ]
 
 
-
---viewComment : Maybe User -> Article -> Comment -> Html (Pages.Msg.Msg Msg)
-
-
-viewComment app currentUser article comment =
+viewComment : RouteBuilder.StaticPayload Data ActionData RouteParams -> Maybe User -> Comment -> Html (Pages.Msg.Msg Msg)
+viewComment app currentUser comment =
     let
         viewCommentActions =
             Utils.Maybe.view currentUser <|
@@ -580,30 +613,22 @@ action routeParams =
                                     Nothing ->
                                         BackendTask.succeed (\_ -> Server.Response.render {})
 
+                            Ok DeleteArticle ->
+                                case token of
+                                    Just justToken ->
+                                        Api.Article.delete
+                                            { token = justToken
+                                            , slug = routeParams.slug
+                                            }
+                                            |> BackendTask.map
+                                                (\_ ->
+                                                    \_ ->
+                                                        Route.redirectTo Route.Index
+                                                )
+
+                                    Nothing ->
+                                        BackendTask.succeed (\_ -> Server.Response.render {})
+
                             Err _ ->
                                 BackendTask.succeed (\_ -> Server.Response.render {})
             )
-
-
-
---type Msg
---    | ClickedDeleteArticle User Article
---    | DeletedArticle (Data Article)
---
---
---update : Request.With Params -> Msg -> Model -> ( Model, Cmd Msg )
---update req msg model =
---    case msg of
---        ClickedDeleteArticle user article ->
---            ( model
---            , Api.Article.delete
---                { token = user.token
---                , slug = article.slug
---                , onResponse = DeletedArticle
---                }
---            )
---
---        DeletedArticle _ ->
---            ( model
---            , Utils.Route.navigate req.key Route.Home_
---            )
