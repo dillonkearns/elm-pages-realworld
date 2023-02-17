@@ -26,7 +26,7 @@ view options =
                                 [ ( "Home", Route.Index )
 
                                 --, ( "New Article", Route.Editor )
-                                --, ( "Settings", Route.Settings )
+                                , ( "Settings", Route.Settings )
                                 ]
                             , [ li [ class "nav-item" ]
                                     [ a
