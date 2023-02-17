@@ -16,12 +16,10 @@ module Api.User exposing
 
 -}
 
-import Api.Data exposing (Data)
 import Api.Token exposing (Token)
 import BackendTask exposing (BackendTask)
 import BackendTask.Http
 import FatalError exposing (FatalError)
-import Http
 import Json.Decode as Json
 import Json.Encode as Encode
 import Utils.Json
@@ -141,7 +139,7 @@ update :
             , bio : String
         }
     }
-    -> BackendTask FatalError User
+    -> BackendTask FatalError (Result (List String) User)
 update options =
     let
         body : Json.Value
@@ -166,7 +164,8 @@ update options =
                   )
                 ]
     in
-    Api.Token.put (Just options.token)
+    Api.Token.put
+        (Just options.token)
         { url = "https://api.realworld.io/api/user"
         , body = BackendTask.Http.jsonBody body
         , expect = Json.field "user" decoder

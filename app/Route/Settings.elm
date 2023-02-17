@@ -2,6 +2,7 @@ module Route.Settings exposing (ActionData, Data, Model, Msg, RouteParams, route
 
 import Api.User exposing (User)
 import BackendTask
+import Components.ErrorList
 import Effect exposing (Effect)
 import ErrorPage
 import FatalError
@@ -24,6 +25,7 @@ import RouteBuilder
 import Server.Request
 import Server.Response
 import Shared
+import Utils.Maybe
 import View exposing (View)
 
 
@@ -106,13 +108,12 @@ view maybeUrl sharedModel model app =
                     [ div [ class "col-md-6 offset-md-3 col-xs-12" ]
                         [ h1 [ class "text-xs-center" ] [ text "Your Settings" ]
                         , br [] []
-
-                        --, Components.ErrorList.view model.errors
-                        --, Utils.Maybe.view model.message <|
-                        --    \message ->
-                        --        p [ class "text-success" ] [ text message ]
+                        , Components.ErrorList.view (app.action |> Maybe.map .errors |> Maybe.withDefault [])
+                        , Utils.Maybe.view (app.action |> Maybe.andThen .message) <|
+                            \message ->
+                                p [ class "text-success" ] [ text message ]
                         , Form.renderHtml []
-                            (\renderHtmlUnpack -> Just renderHtmlUnpack.errors)
+                            (\_ -> Nothing)
                             app
                             app.data.user
                             (Form.toDynamicTransition "form" form)
@@ -139,7 +140,9 @@ type alias Data =
 
 
 type alias ActionData =
-    { errors : Form.Response String }
+    { errors : List String
+    , message : Maybe String
+    }
 
 
 data :
@@ -186,7 +189,18 @@ action routeParams =
                                             |> BackendTask.map
                                                 (\updatedUser ->
                                                     \_ ->
-                                                        Route.redirectTo Route.Settings
+                                                        Server.Response.render
+                                                            (case updatedUser of
+                                                                Ok okUser ->
+                                                                    { errors = []
+                                                                    , message = Just "User updated!"
+                                                                    }
+
+                                                                Err errors ->
+                                                                    { errors = errors
+                                                                    , message = Just "User updated!"
+                                                                    }
+                                                            )
                                                 )
 
                                     Nothing ->
@@ -199,7 +213,9 @@ action routeParams =
                                 BackendTask.succeed
                                     (\_ ->
                                         Server.Response.render
-                                            { errors = formResponse }
+                                            { errors = []
+                                            , message = Nothing
+                                            }
                                     )
             )
 

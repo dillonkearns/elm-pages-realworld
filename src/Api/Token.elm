@@ -2,7 +2,7 @@ module Api.Token exposing
     ( Token
     , decoder, encode
     , get, put, post, delete
-    , fromSession, toString
+    , fromSession, requestWithErrors, toString
     )
 
 {-|
@@ -92,9 +92,9 @@ put :
         , body : BackendTask.Http.Body
         , expect : Json.Decoder value
         }
-    -> BackendTask FatalError value
+    -> BackendTask FatalError (Result (List String) value)
 put token options =
-    request "PUT" options.body token options
+    requestWithErrors "PUT" options.body token options
 
 
 request :
@@ -124,3 +124,50 @@ request method body maybeToken options =
         }
         (BackendTask.Http.expectJson options.expect)
         |> BackendTask.allowFatal
+
+
+requestWithErrors :
+    String
+    -> BackendTask.Http.Body
+    -> Maybe Token
+    -> { options | url : String, expect : Json.Decoder value }
+    -> BackendTask FatalError (Result (List String) value)
+requestWithErrors method body maybeToken options =
+    BackendTask.Http.request
+        { method = method
+        , headers =
+            case maybeToken of
+                Just (Token token) ->
+                    [ ( "Authorization", "Token " ++ token ) ]
+
+                Nothing ->
+                    []
+        , url = options.url
+        , body = body
+        , timeoutInMs = Just (1000 * 60) -- 60 second timeout
+        , retries = Nothing
+        }
+        (BackendTask.Http.expectJson options.expect)
+        |> BackendTask.map Ok
+        |> BackendTask.onError
+            (\{ recoverable, fatal } ->
+                case recoverable of
+                    BackendTask.Http.BadStatus metadata stringBody ->
+                        case Json.decodeString errorDecoder stringBody of
+                            Ok errors ->
+                                Err errors
+                                    |> BackendTask.succeed
+
+                            Err _ ->
+                                BackendTask.fail fatal
+
+                    _ ->
+                        BackendTask.fail fatal
+            )
+
+
+errorDecoder : Json.Decoder (List String)
+errorDecoder =
+    Json.keyValuePairs (Json.list Json.string)
+        |> Json.field "errors"
+        |> Json.map (List.concatMap (\( key, values ) -> values |> List.map (\value -> key ++ " " ++ value)))
