@@ -293,6 +293,28 @@ followForm =
         |> Form.hiddenKind ( "kind", "follow" ) "Expected kind."
 
 
+deleteCommentForm : Form.HtmlForm String Int Int Msg
+deleteCommentForm =
+    (\id ->
+        { combine =
+            Form.Validation.succeed identity
+                |> Form.Validation.andMap id
+        , view =
+            \formState ->
+                [ button
+                    [ class "mod-options"
+                    , Html.Attributes.disabled formState.isTransitioning
+                    , style "border" "none"
+                    ]
+                    [ i [ class "ion-trash-a" ] [] ]
+                ]
+        }
+    )
+        |> Form.init
+        |> Form.hiddenField "id" (Form.Field.required "Required" (Form.Field.int { invalid = \_ -> "Invalid ID, must be int." }) |> Form.Field.withInitialValue Form.Value.int)
+        |> Form.hiddenKind ( "kind", "delete-comment" ) "Expected kind."
+
+
 commentForm : Form.HtmlForm String String User Msg
 commentForm =
     (\comment ->
@@ -350,6 +372,7 @@ type Action
     = Favorite FavoriteAction
     | Follow FollowAction
     | SubmitComment String
+    | DeleteComment Int
 
 
 formHandlers : Form.ServerForms String Action
@@ -357,6 +380,7 @@ formHandlers =
     Form.initCombined Favorite favoriteForm
         |> Form.combine Follow followForm
         |> Form.combine SubmitComment commentForm
+        |> Form.combine DeleteComment deleteCommentForm
 
 
 viewCommentSection : RouteBuilder.StaticPayload Data ActionData RouteParams -> Article -> Html (Pages.Msg.Msg Msg)
@@ -376,24 +400,28 @@ viewCommentSection app article =
 
                     Nothing ->
                         []
-                , List.map (viewComment app.data.user article) app.data.comments
+                , List.map (viewComment app app.data.user article) app.data.comments
                 ]
         ]
 
 
-viewComment : Maybe User -> Article -> Comment -> Html (Pages.Msg.Msg Msg)
-viewComment currentUser article comment =
+
+--viewComment : Maybe User -> Article -> Comment -> Html (Pages.Msg.Msg Msg)
+
+
+viewComment app currentUser article comment =
     let
         viewCommentActions =
             Utils.Maybe.view currentUser <|
                 \user ->
                     if user.username == comment.author.username then
-                        span
-                            [ class "mod-options"
-
-                            --, Events.onClick (ClickedDeleteComment user article comment)
+                        Form.renderHtml
+                            [ style "display" "inline"
                             ]
-                            [ i [ class "ion-trash-a" ] [] ]
+                            (\_ -> Nothing)
+                            app
+                            comment.id
+                            (Form.toDynamicTransition ("delete-comment-" ++ String.fromInt comment.id) deleteCommentForm)
 
                     else
                         text ""
@@ -535,6 +563,23 @@ action routeParams =
                                     Nothing ->
                                         BackendTask.succeed (\_ -> Server.Response.render {})
 
+                            Ok (DeleteComment commentId) ->
+                                case token of
+                                    Just justToken ->
+                                        Api.Article.Comment.delete
+                                            { token = justToken
+                                            , articleSlug = routeParams.slug
+                                            , commentId = commentId
+                                            }
+                                            |> BackendTask.map
+                                                (\_ ->
+                                                    \_ ->
+                                                        Server.Response.render {}
+                                                )
+
+                                    Nothing ->
+                                        BackendTask.succeed (\_ -> Server.Response.render {})
+
                             Err _ ->
                                 BackendTask.succeed (\_ -> Server.Response.render {})
             )
@@ -544,8 +589,6 @@ action routeParams =
 --type Msg
 --    | ClickedDeleteArticle User Article
 --    | DeletedArticle (Data Article)
---    | ClickedDeleteComment User Article Comment
---    | DeletedComment (Data Int)
 --
 --
 --update : Request.With Params -> Msg -> Model -> ( Model, Cmd Msg )
@@ -563,24 +606,4 @@ action routeParams =
 --        DeletedArticle _ ->
 --            ( model
 --            , Utils.Route.navigate req.key Route.Home_
---            )
---
---        ClickedDeleteComment user article comment ->
---            ( model
---            , Api.Article.Comment.delete
---                { token = user.token
---                , articleSlug = article.slug
---                , commentId = comment.id
---                , onResponse = DeletedComment
---                }
---            )
---
---        DeletedComment id ->
---            let
---                removeComment : List Comment -> List Comment
---                removeComment =
---                    List.filter (\comment -> Api.Data.Success comment.id /= id)
---            in
---            ( { model | comments = Api.Data.map removeComment model.comments }
---            , Cmd.none
 --            )

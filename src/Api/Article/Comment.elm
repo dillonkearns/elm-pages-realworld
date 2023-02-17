@@ -90,20 +90,15 @@ delete :
     { token : Token
     , articleSlug : String
     , commentId : Int
-    , onResponse : Data Int -> msg
     }
-    -> Cmd msg
+    -> BackendTask FatalError Int
 delete options =
-    Debug.todo ""
-
-
-
---Api.Token.delete (Just options.token)
---{ url =
---    "https://api.realworld.io/api/articles/"
---        ++ options.articleSlug
---        ++ "/comments/"
---        ++ String.fromInt options.commentId
---, expect =
---    Api.Data.expectJson options.onResponse (Json.succeed options.commentId)
---}
+    Api.Token.delete (Just options.token)
+        { url =
+            "https://api.realworld.io/api/articles/"
+                ++ options.articleSlug
+                ++ "/comments/"
+                ++ String.fromInt options.commentId
+        , expect =
+            Json.succeed options.commentId
+        }
