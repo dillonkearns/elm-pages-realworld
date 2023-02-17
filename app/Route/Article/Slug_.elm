@@ -33,18 +33,6 @@ import Utils.Time
 import View exposing (View)
 
 
-type alias Model =
-    {}
-
-
-type Msg
-    = NoOp
-
-
-type alias RouteParams =
-    { slug : String }
-
-
 route : RouteBuilder.StatefulRoute RouteParams Data ActionData Model Msg
 route =
     RouteBuilder.buildWithLocalState
@@ -56,6 +44,14 @@ route =
         (RouteBuilder.serverRender { data = data, action = action, head = head })
 
 
+
+-- INIT
+
+
+type alias Model =
+    {}
+
+
 init :
     Maybe Pages.PageUrl.PageUrl
     -> Shared.Model
@@ -63,6 +59,14 @@ init :
     -> ( Model, Effect.Effect Msg )
 init pageUrl sharedModel app =
     ( {}, Effect.none )
+
+
+
+-- UPDATE
+
+
+type Msg
+    = NoOp
 
 
 update :
@@ -86,7 +90,212 @@ subscriptions :
     -> Model
     -> Sub Msg
 subscriptions maybePageUrl routeParams path sharedModel model =
-    Platform.Sub.none
+    Sub.none
+
+
+
+-- VIEW
+
+
+view :
+    Maybe Pages.PageUrl.PageUrl
+    -> Shared.Model
+    -> Model
+    -> RouteBuilder.StaticPayload Data ActionData RouteParams
+    -> View.View (Pages.Msg.Msg Msg)
+view maybeUrl shared model app =
+    { title = app.data.article.title
+    , body =
+        [ viewArticle app app.data.article
+            |> Html.map (\_ -> Pages.Msg.UserMsg NoOp)
+
+        --|> Html.map Pages.Msg.UserMsg
+        ]
+            |> Layout.view app.data.user
+    }
+
+
+viewArticle : RouteBuilder.StaticPayload Data ActionData RouteParams -> Article -> Html Msg
+viewArticle app article =
+    div [ class "article-page" ]
+        [ div [ class "banner" ]
+            [ div [ class "container" ]
+                [ h1 [] [ text article.title ]
+                , viewArticleMeta app article
+                ]
+            ]
+        , div [ class "container page" ]
+            [ div [ class "row article-content" ]
+                [ div [ class "col-md-12" ]
+                    [ Markdown.toHtml [] article.body ]
+                , if List.isEmpty article.tags then
+                    text ""
+
+                  else
+                    ul [ class "tag-list" ]
+                        (List.map
+                            (\tag -> li [ class "tag-default tag-pill tag-outline" ] [ text tag ])
+                            article.tags
+                        )
+                ]
+            , hr [] []
+            , div [ class "article-actions" ] [ viewArticleMeta app article ]
+            , viewCommentSection app article
+            ]
+        ]
+
+
+viewArticleMeta : RouteBuilder.StaticPayload Data ActionData RouteParams -> Article -> Html Msg
+viewArticleMeta app article =
+    div [ class "article-meta" ] <|
+        List.concat
+            [ [ a [ href ("/profile/" ++ article.author.username) ]
+                    [ img [ src article.author.image ] []
+                    ]
+              , div [ class "info" ]
+                    [ a [ class "author", href ("/profile/" ++ article.author.username) ] [ text article.author.username ]
+                    , span [ class "date" ] [ text (Utils.Time.formatDate article.createdAt) ]
+                    ]
+              ]
+            , case app.data.user of
+                Just user ->
+                    viewControls article user
+
+                Nothing ->
+                    []
+            ]
+
+
+viewControls : Article -> User -> List (Html Msg)
+viewControls article user =
+    if article.author.username == user.username then
+        [ a
+            [ class "btn btn-outline-secondary btn-sm"
+            , href ("/editor/" ++ article.slug)
+            ]
+            [ i [ class "ion-edit" ] []
+            , text "Edit article"
+            ]
+
+        --, IconButton.view
+        --    { color = IconButton.OutlinedRed
+        --    , icon = IconButton.Trash
+        --    , label = "Delete article"
+        --    , onClick = ClickedDeleteArticle user article
+        --    }
+        ]
+
+    else
+        [--if article.author.following then
+         --    IconButton.view
+         --        { color = IconButton.FilledGray
+         --        , icon = IconButton.Plus
+         --        , label = "Unfollow " ++ article.author.username
+         --        , onClick = ClickedUnfollow user article.author
+         --        }
+         --
+         --  else
+         --    IconButton.view
+         --        { color = IconButton.OutlinedGray
+         --        , icon = IconButton.Plus
+         --        , label = "Follow " ++ article.author.username
+         --        , onClick = ClickedFollow user article.author
+         --        }
+         --, if article.favorited then
+         --    IconButton.view
+         --        { color = IconButton.FilledGreen
+         --        , icon = IconButton.Heart
+         --        , label = "Unfavorite Post (" ++ String.fromInt article.favoritesCount ++ ")"
+         --        , onClick = ClickedUnfavorite user article
+         --        }
+         --
+         --  else
+         --    IconButton.view
+         --        { color = IconButton.OutlinedGreen
+         --        , icon = IconButton.Heart
+         --        , label = "Favorite Post (" ++ String.fromInt article.favoritesCount ++ ")"
+         --        , onClick = ClickedFavorite user article
+         --        }
+        ]
+
+
+viewCommentSection : RouteBuilder.StaticPayload Data ActionData RouteParams -> Article -> Html Msg
+viewCommentSection app article =
+    div [ class "row" ]
+        [ div [ class "col-xs-12 col-md-8 offset-md-2" ] <|
+            List.concat
+                [ case app.data.user of
+                    Just user ->
+                        [ viewCommentForm user article ]
+
+                    Nothing ->
+                        []
+                , List.map (viewComment app.data.user article) app.data.comments
+                ]
+        ]
+
+
+viewCommentForm : User -> Article -> Html Msg
+viewCommentForm user article =
+    form
+        [ class "card comment-form"
+
+        --, Events.onSubmit (SubmittedCommentForm user article)
+        ]
+        [ div [ class "card-block" ]
+            [ textarea
+                [ class "form-control"
+                , placeholder "Write a comment..."
+                , attribute "rows" "3"
+
+                --, value model.commentText
+                --, Events.onInput UpdatedCommentText
+                ]
+                []
+            ]
+        , div [ class "card-footer" ]
+            [ img [ class "comment-author-img", src user.image ] []
+            , button [ class "btn btn-sm btn-primary" ] [ text "Post Comment" ]
+            ]
+        ]
+
+
+viewComment : Maybe User -> Article -> Comment -> Html Msg
+viewComment currentUser article comment =
+    let
+        viewCommentActions =
+            Utils.Maybe.view currentUser <|
+                \user ->
+                    if user.username == comment.author.username then
+                        span
+                            [ class "mod-options"
+
+                            --, Events.onClick (ClickedDeleteComment user article comment)
+                            ]
+                            [ i [ class "ion-trash-a" ] [] ]
+
+                    else
+                        text ""
+    in
+    div [ class "card" ]
+        [ div [ class "card-block" ]
+            [ p [ class "card-text" ] [ text comment.body ] ]
+        , div [ class "card-footer" ]
+            [ a
+                [ class "comment-author"
+                , href ("/profile/" ++ comment.author.username)
+                ]
+                [ img [ class "comment-author-img", src comment.author.image ] []
+                , text comment.author.username
+                ]
+            , span [ class "date-posted" ] [ text (Utils.Time.formatDate comment.createdAt) ]
+            , viewCommentActions
+            ]
+        ]
+
+
+type alias RouteParams =
+    { slug : String }
 
 
 type alias Data =
@@ -137,24 +346,6 @@ head app =
     []
 
 
-view :
-    Maybe Pages.PageUrl.PageUrl
-    -> Shared.Model
-    -> Model
-    -> RouteBuilder.StaticPayload Data ActionData RouteParams
-    -> View.View (Pages.Msg.Msg Msg)
-view maybeUrl shared model app =
-    { title = app.data.article.title
-    , body =
-        [ viewArticle app app.data.article
-            |> Html.map (\_ -> Pages.Msg.UserMsg NoOp)
-
-        --|> Html.map Pages.Msg.UserMsg
-        ]
-            |> Layout.view app.data.user
-    }
-
-
 action :
     RouteParams
     -> Server.Request.Parser (BackendTask.BackendTask FatalError.FatalError (Server.Response.Response ActionData ErrorPage.ErrorPage))
@@ -163,9 +354,6 @@ action routeParams =
 
 
 
----- UPDATE
---
---
 --type Msg
 --    | ClickedFavorite User Article
 --    | ClickedUnfavorite User Article
@@ -303,188 +491,3 @@ action routeParams =
 --            ( { model | comments = Api.Data.map removeComment model.comments }
 --            , Cmd.none
 --            )
---viewArticle : Shared.Model -> Model -> Article -> Html Msg
-
-
-viewArticle app article =
-    div [ class "article-page" ]
-        [ div [ class "banner" ]
-            [ div [ class "container" ]
-                [ h1 [] [ text article.title ]
-                , viewArticleMeta app article
-                ]
-            ]
-        , div [ class "container page" ]
-            [ div [ class "row article-content" ]
-                [ div [ class "col-md-12" ]
-                    [ Markdown.toHtml [] article.body ]
-                , if List.isEmpty article.tags then
-                    text ""
-
-                  else
-                    ul [ class "tag-list" ]
-                        (List.map
-                            (\tag -> li [ class "tag-default tag-pill tag-outline" ] [ text tag ])
-                            article.tags
-                        )
-                ]
-            , hr [] []
-            , div [ class "article-actions" ] [ viewArticleMeta app article ]
-            , viewCommentSection app app.data.comments article
-            ]
-        ]
-
-
-
---viewArticleMeta : Shared.Model -> Model -> Article -> Html Msg
-
-
-viewArticleMeta app article =
-    div [ class "article-meta" ] <|
-        List.concat
-            [ [ a [ href ("/profile/" ++ article.author.username) ]
-                    [ img [ src article.author.image ] []
-                    ]
-              , div [ class "info" ]
-                    [ a [ class "author", href ("/profile/" ++ article.author.username) ] [ text article.author.username ]
-                    , span [ class "date" ] [ text (Utils.Time.formatDate article.createdAt) ]
-                    ]
-              ]
-            , case app.data.user of
-                Just user ->
-                    viewControls article user
-
-                Nothing ->
-                    []
-            ]
-
-
-viewControls : Article -> User -> List (Html Msg)
-viewControls article user =
-    if article.author.username == user.username then
-        [ a
-            [ class "btn btn-outline-secondary btn-sm"
-            , href ("/editor/" ++ article.slug)
-            ]
-            [ i [ class "ion-edit" ] []
-            , text "Edit article"
-            ]
-
-        --, IconButton.view
-        --    { color = IconButton.OutlinedRed
-        --    , icon = IconButton.Trash
-        --    , label = "Delete article"
-        --    , onClick = ClickedDeleteArticle user article
-        --    }
-        ]
-
-    else
-        [--if article.author.following then
-         --    IconButton.view
-         --        { color = IconButton.FilledGray
-         --        , icon = IconButton.Plus
-         --        , label = "Unfollow " ++ article.author.username
-         --        , onClick = ClickedUnfollow user article.author
-         --        }
-         --
-         --  else
-         --    IconButton.view
-         --        { color = IconButton.OutlinedGray
-         --        , icon = IconButton.Plus
-         --        , label = "Follow " ++ article.author.username
-         --        , onClick = ClickedFollow user article.author
-         --        }
-         --, if article.favorited then
-         --    IconButton.view
-         --        { color = IconButton.FilledGreen
-         --        , icon = IconButton.Heart
-         --        , label = "Unfavorite Post (" ++ String.fromInt article.favoritesCount ++ ")"
-         --        , onClick = ClickedUnfavorite user article
-         --        }
-         --
-         --  else
-         --    IconButton.view
-         --        { color = IconButton.OutlinedGreen
-         --        , icon = IconButton.Heart
-         --        , label = "Favorite Post (" ++ String.fromInt article.favoritesCount ++ ")"
-         --        , onClick = ClickedFavorite user article
-         --        }
-        ]
-
-
-
---viewCommentSection : Shared.Model -> Model -> Article -> Html Msg
-
-
-viewCommentSection app comments article =
-    div [ class "row" ]
-        [ div [ class "col-xs-12 col-md-8 offset-md-2" ] <|
-            List.concat
-                [ case app.data.user of
-                    Just user ->
-                        [ viewCommentForm user article ]
-
-                    Nothing ->
-                        []
-                , List.map (viewComment app.data.user article) comments
-                ]
-        ]
-
-
-viewCommentForm : User -> Article -> Html Msg
-viewCommentForm user article =
-    form
-        [ class "card comment-form"
-
-        --, Events.onSubmit (SubmittedCommentForm user article)
-        ]
-        [ div [ class "card-block" ]
-            [ textarea
-                [ class "form-control"
-                , placeholder "Write a comment..."
-                , attribute "rows" "3"
-
-                --, value model.commentText
-                --, Events.onInput UpdatedCommentText
-                ]
-                []
-            ]
-        , div [ class "card-footer" ]
-            [ img [ class "comment-author-img", src user.image ] []
-            , button [ class "btn btn-sm btn-primary" ] [ text "Post Comment" ]
-            ]
-        ]
-
-
-viewComment : Maybe User -> Article -> Comment -> Html Msg
-viewComment currentUser article comment =
-    let
-        viewCommentActions =
-            Utils.Maybe.view currentUser <|
-                \user ->
-                    if user.username == comment.author.username then
-                        span
-                            [ class "mod-options"
-
-                            --, Events.onClick (ClickedDeleteComment user article comment)
-                            ]
-                            [ i [ class "ion-trash-a" ] [] ]
-
-                    else
-                        text ""
-    in
-    div [ class "card" ]
-        [ div [ class "card-block" ]
-            [ p [ class "card-text" ] [ text comment.body ] ]
-        , div [ class "card-footer" ]
-            [ a
-                [ class "comment-author"
-                , href ("/profile/" ++ comment.author.username)
-                ]
-                [ img [ class "comment-author-img", src comment.author.image ] []
-                , text comment.author.username
-                ]
-            , span [ class "date-posted" ] [ text (Utils.Time.formatDate comment.createdAt) ]
-            , viewCommentActions
-            ]
-        ]
