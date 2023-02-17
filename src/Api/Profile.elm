@@ -1,8 +1,7 @@
 module Api.Profile exposing
     ( Profile
     , decoder
-    , follow, unfollow
-    --, get, follow, unfollow
+    , get, follow, unfollow
     )
 
 {-|
@@ -13,12 +12,10 @@ module Api.Profile exposing
 
 -}
 
-import Api.Data exposing (Data)
 import Api.Token exposing (Token)
 import BackendTask exposing (BackendTask)
 import BackendTask.Http
 import FatalError exposing (FatalError)
-import Http
 import Json.Decode as Json
 import Utils.Json
 
@@ -42,21 +39,18 @@ decoder =
 
 
 -- ENDPOINTS
---get :
---    { token : Maybe Token
---    , username : String
---    , onResponse : Data Profile -> msg
---    }
---    -> Cmd msg
---get options =
---    Api.Token.get options.token
---        { url = "https://api.realworld.io/api/profiles/" ++ options.username
---        , expect =
---            Api.Data.expectJson options.onResponse
---                (Json.field "profile" decoder)
---        }
---
---
+
+
+get :
+    { token : Maybe Token
+    , username : String
+    }
+    -> BackendTask FatalError Profile
+get options =
+    Api.Token.get options.token
+        { url = "https://api.realworld.io/api/profiles/" ++ options.username
+        , expect = Json.field "profile" decoder
+        }
 
 
 follow :

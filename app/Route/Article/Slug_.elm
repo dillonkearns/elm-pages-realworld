@@ -147,18 +147,16 @@ viewArticleMeta : RouteBuilder.StaticPayload Data ActionData RouteParams -> Arti
 viewArticleMeta app article =
     div [ class "article-meta" ] <|
         List.concat
-            [ [ a
-                    [--href ("/profile/" ++ article.author.username)
-                    ]
-                    [ img [ src article.author.image ] []
-                    ]
-              , div [ class "info" ]
-                    [ a
-                        [ class "author"
-
-                        --, href ("/profile/" ++ article.author.username)
+            [ [ Route.Profile__Username_ { username = article.author.username }
+                    |> Route.link []
+                        [ img [ src article.author.image ] []
                         ]
-                        [ text article.author.username ]
+              , div [ class "info" ]
+                    [ Route.Profile__Username_ { username = article.author.username }
+                        |> Route.link
+                            [ class "author"
+                            ]
+                            [ text article.author.username ]
                     , span [ class "date" ] [ text (Utils.Time.formatDate article.createdAt) ]
                     ]
               ]
@@ -463,14 +461,13 @@ viewComment app currentUser comment =
         [ div [ class "card-block" ]
             [ p [ class "card-text" ] [ text comment.body ] ]
         , div [ class "card-footer" ]
-            [ a
-                [ class "comment-author"
-
-                --, href ("/profile/" ++ comment.author.username)
-                ]
-                [ img [ class "comment-author-img", src comment.author.image ] []
-                , text comment.author.username
-                ]
+            [ Route.Profile__Username_ { username = comment.author.username }
+                |> Route.link
+                    [ class "comment-author"
+                    ]
+                    [ img [ class "comment-author-img", src comment.author.image ] []
+                    , text comment.author.username
+                    ]
             , span [ class "date-posted" ] [ text (Utils.Time.formatDate comment.createdAt) ]
             , viewCommentActions
             ]
