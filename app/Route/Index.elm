@@ -104,12 +104,6 @@ data :
     RouteParams
     -> Server.Request.Parser (BackendTask.BackendTask FatalError.FatalError (Server.Response.Response Data ErrorPage.ErrorPage))
 data routeParams =
-    -- -- TODO adapt this logic for elm-pages
-    --        activeTab : Tab
-    --        activeTab =
-    --            shared.user
-    --                |> Maybe.map FeedFor
-    --                |> Maybe.withDefault Global
     Server.Request.succeed
         ()
         |> MySession.withUser
@@ -121,7 +115,9 @@ data routeParams =
                                 { tags = tags
                                 , activeTab =
                                     -- TODO check query params for active tab
-                                    Global
+                                    user
+                                        |> Maybe.map FeedFor
+                                        |> Maybe.withDefault Global
                                 , page =
                                     -- TODO get page from query params
                                     1
