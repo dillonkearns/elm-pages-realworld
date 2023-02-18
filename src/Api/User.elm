@@ -44,7 +44,7 @@ decoder =
 
 authentication :
     { email : String, password : String }
-    -> BackendTask FatalError User
+    -> BackendTask FatalError (Result (List String) User)
 authentication user =
     let
         body : Json.Value
@@ -58,13 +58,12 @@ authentication user =
                   )
                 ]
     in
-    BackendTask.Http.post
-        "https://api.realworld.io/api/users/login"
+    Api.Token.requestWithErrors "POST"
         (BackendTask.Http.jsonBody body)
-        (BackendTask.Http.expectJson
-            (Json.field "user" decoder)
-        )
-        |> BackendTask.allowFatal
+        Nothing
+        { url = "https://api.realworld.io/api/users/login"
+        , expect = Json.field "user" decoder
+        }
 
 
 getUser : Maybe Token -> BackendTask FatalError (Maybe User)

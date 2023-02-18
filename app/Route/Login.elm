@@ -1,15 +1,9 @@
-module Route.Login exposing (ActionData, Data, route, RouteParams, Msg, Model)
-
-{-|
-
-@docs ActionData, Data, route, RouteParams, Msg, Model
-
--}
+module Route.Login exposing (ActionData, Data, Model, Msg, RouteParams, route)
 
 import Api.Token as Token
 import Api.User
 import BackendTask
-import Debug
+import Components.ErrorList
 import Effect
 import ErrorPage
 import FatalError
@@ -20,9 +14,9 @@ import Form.Validation
 import Head
 import Html exposing (button, div, fieldset, h1, p, text)
 import Html.Attributes exposing (class, placeholder)
+import Layout
 import Pages.Msg
 import Pages.PageUrl
-import Pages.Script
 import Path
 import Platform.Sub
 import Result
@@ -33,6 +27,7 @@ import Server.Response
 import Server.Session
 import Server.SetCookie
 import Shared
+import Utils.Form exposing (inProgressText)
 import View
 
 
@@ -97,7 +92,7 @@ type alias Data =
 
 
 type alias ActionData =
-    { errors : Form.Response String }
+    { errors : List String }
 
 
 data :
@@ -121,13 +116,29 @@ view :
 view maybeUrl sharedModel model app =
     { title = "Sign in"
     , body =
-        [ Form.renderHtml
-            []
-            (\renderHtmlUnpack -> Just renderHtmlUnpack.errors)
-            app
-            ()
-            (Form.toDynamicTransition "form" form)
+        [ div [ class "auth-page" ]
+            [ div [ class "container page" ]
+                [ div [ class "row" ]
+                    [ div [ class "col-md-6 offset-md-3 col-xs-12" ]
+                        [ h1 [ class "text-xs-center" ]
+                            [ text "Sign in"
+                            ]
+                        , p [ class "text-xs-center" ]
+                            [ Route.Register |> Route.link [] [ text "Need an account?" ]
+                            ]
+                        , case app.action |> Maybe.map .errors |> Maybe.withDefault [] of
+                            [] ->
+                                text ""
+
+                            reasons ->
+                                Components.ErrorList.view reasons
+                        , Form.renderHtml [] (\_ -> Nothing) app () (Form.toDynamicTransition "form" form)
+                        ]
+                    ]
+                ]
+            ]
         ]
+            |> Layout.view Nothing
     }
 
 
@@ -160,51 +171,28 @@ action routeParams =
                                     }
                                     |> BackendTask.map
                                         (\userResult ->
-                                            ( okSession
-                                                |> Server.Session.insert "token" (Token.toString userResult.token)
-                                                |> Debug.log "inserting session"
-                                            , Route.redirectTo Route.Index
-                                            )
+                                            case userResult of
+                                                Ok okUser ->
+                                                    ( okSession
+                                                        |> Server.Session.insert "token" (Token.toString okUser.token)
+                                                    , Route.redirectTo Route.Index
+                                                    )
+
+                                                Err errors ->
+                                                    ( okSession
+                                                    , Server.Response.render { errors = errors }
+                                                    )
                                         )
 
                             Err _ ->
-                                BackendTask.map
-                                    (\_ ->
-                                        ( okSession
-                                        , Server.Response.render { errors = formResponse }
-                                        )
-                                    )
-                                    (Pages.Script.log
-                                        (Debug.toString parsedForm)
+                                BackendTask.succeed
+                                    ( okSession
+                                    , Server.Response.render { errors = [] }
                                     )
             )
 
 
-errorsView :
-    Form.Errors String
-    -> Form.Validation.Field String parsed kind
-    -> Html.Html (Pages.Msg.Msg Msg)
-errorsView errors field =
-    if List.isEmpty (Form.errorsForField field errors) then
-        Html.div [] []
-
-    else
-        Html.div
-            []
-            [ Html.ul
-                []
-                (List.map
-                    (\error ->
-                        Html.li
-                            [ Html.Attributes.style "color" "red" ]
-                            [ Html.text error ]
-                    )
-                    (Form.errorsForField field errors)
-                )
-            ]
-
-
-form : Form.HtmlForm String ParsedForm input Msg
+form : Form.HtmlForm String ParsedForm () Msg
 form =
     (\email password ->
         { combine =
@@ -222,48 +210,12 @@ form =
                                 , placeholder label
                                 ]
                                 field
-                            , errorsView formState.errors field
                             ]
                 in
-                [ --, if formState.isTransitioning then
-                  --    Html.button
-                  --        [ Html.Attributes.disabled True ]
-                  --        [ Html.text "Submitting..." ]
-                  --
-                  --  else
-                  --    Html.button [] [ Html.text "Submit" ]
-                  --]
-                  div [ class "auth-page" ]
-                    [ div [ class "container page" ]
-                        [ div [ class "row" ]
-                            [ div [ class "col-md-6 offset-md-3 col-xs-12" ]
-                                [ h1 [ class "text-xs-center" ]
-                                    [ text "Sign in" --text options.label
-                                    ]
-                                , p [ class "text-xs-center" ]
-                                    [ Route.Register |> Route.link [] [ text "Need an account?" ]
-                                    ]
-
-                                --,
-                                --case options.user of
-                                --    Api.Data.Failure reasons ->
-                                --        Components.ErrorList.view reasons
-                                --
-                                --    _ ->
-                                --        text ""
-                                --, --form [ Events.onSubmit options.onFormSubmit ] <|
-                                --List.concat
-                                --    [ List.map viewField options.fields
-                                --    , []
-                                --    ]
-                                , fieldView "Email" email
-                                , fieldView "Password" password
-                                , button [ class "btn btn-lg btn-primary pull-xs-right" ]
-                                    [ text "Sign in" --text options.label
-                                    ]
-                                ]
-                            ]
-                        ]
+                [ fieldView "Email" email
+                , fieldView "Password" password
+                , button [ class "btn btn-lg btn-primary pull-xs-right" ]
+                    [ text <| inProgressText formState "Sign in"
                     ]
                 ]
         }
