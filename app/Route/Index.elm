@@ -26,6 +26,7 @@ import RouteBuilder
 import Server.Request
 import Server.Response
 import Shared
+import Utils.Form exposing (inProgressText)
 import Utils.Maybe
 import View
 
@@ -375,31 +376,18 @@ favoriteForm =
                 |> Form.Validation.andMap setFavorite
         , view =
             \formState ->
-                let
-                    article : Article
-                    article =
-                        formState.data
-
-                    ellipsesIfInProgress : String
-                    ellipsesIfInProgress =
-                        if formState.isTransitioning then
-                            "..."
-
-                        else
-                            ""
-                in
                 [ if formState.data.favorited then
                     IconButton.view
                         { color = IconButton.FilledGreen
                         , icon = IconButton.Heart
-                        , label = " " ++ String.fromInt article.favoritesCount ++ ellipsesIfInProgress
+                        , label = inProgressText formState <| " " ++ String.fromInt formState.data.favoritesCount
                         }
 
                   else
                     IconButton.view
                         { color = IconButton.OutlinedGreen
                         , icon = IconButton.Heart
-                        , label = " " ++ String.fromInt article.favoritesCount ++ ellipsesIfInProgress
+                        , label = inProgressText formState <| " " ++ String.fromInt formState.data.favoritesCount
                         }
                 ]
         }
