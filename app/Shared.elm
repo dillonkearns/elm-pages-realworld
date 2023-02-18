@@ -2,12 +2,9 @@ module Shared exposing (Data, Model, Msg(..), SharedMsg(..), template)
 
 import Api.User
 import BackendTask exposing (BackendTask)
-import Components.Footer
-import Components.Navbar
 import Effect exposing (Effect)
 import FatalError exposing (FatalError)
-import Html exposing (Html, div)
-import Html.Attributes exposing (class)
+import Html exposing (Html)
 import Pages.Flags
 import Pages.PageUrl exposing (PageUrl)
 import Path exposing (Path)
@@ -28,8 +25,7 @@ template =
 
 
 type Msg
-    = SharedMsg SharedMsg
-    | MenuClicked
+    = MenuClicked
 
 
 type alias Data =
@@ -67,9 +63,6 @@ init flags maybePagePath =
 update : Msg -> Model -> ( Model, Effect Msg )
 update msg model =
     case msg of
-        SharedMsg globalMsg ->
-            ( model, Effect.none )
-
         MenuClicked ->
             ( { model | user = Nothing }, Effect.none )
 

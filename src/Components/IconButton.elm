@@ -2,7 +2,6 @@ module Components.IconButton exposing (Color(..), Icon(..), view)
 
 import Html exposing (..)
 import Html.Attributes exposing (class)
-import Html.Events as Events
 
 
 type Color

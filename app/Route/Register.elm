@@ -3,7 +3,7 @@ module Route.Register exposing (ActionData, Data, Model, Msg, RouteParams, route
 import Api.User exposing (User)
 import BackendTask
 import Components.ErrorList
-import Effect exposing (Effect)
+import Effect
 import ErrorPage
 import FatalError
 import Form
@@ -18,13 +18,12 @@ import MySession
 import Pages.Msg
 import Pages.PageUrl
 import Path
-import Platform.Sub
 import Route
 import RouteBuilder
 import Server.Request
 import Server.Response
 import Shared
-import View exposing (View)
+import View
 
 
 route : RouteBuilder.StatefulRoute RouteParams Data ActionData Model Msg
@@ -152,7 +151,7 @@ data :
 data routeParams =
     Server.Request.succeed ()
         |> MySession.withUser
-            (\{ token } ->
+            (\_ ->
                 BackendTask.succeed
                     (\maybeUser ->
                         Server.Response.render { user = maybeUser }
@@ -170,7 +169,7 @@ action :
     -> Server.Request.Parser (BackendTask.BackendTask FatalError.FatalError (Server.Response.Response ActionData ErrorPage.ErrorPage))
 action routeParams =
     Server.Request.map
-        (\( formResponse, parsedForm ) ->
+        (\( _, parsedForm ) ->
             case parsedForm of
                 Ok (Action okForm) ->
                     Api.User.registration
@@ -179,7 +178,7 @@ action routeParams =
                         |> BackendTask.map
                             (\updatedUser ->
                                 case updatedUser of
-                                    Ok okUser ->
+                                    Ok _ ->
                                         Route.redirectTo Route.Index
 
                                     Err errors ->

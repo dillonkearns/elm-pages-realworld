@@ -1,6 +1,6 @@
 module Api.Token exposing
     ( Token
-    , decoder, encode
+    , decoder
     , get, put, post, delete
     , fromSession, requestWithErrors, toString
     )
@@ -8,7 +8,7 @@ module Api.Token exposing
 {-|
 
 @docs Token
-@docs decoder, encode
+@docs decoder
 @docs get, put, post, delete
 
 -}
@@ -17,7 +17,6 @@ import BackendTask exposing (BackendTask)
 import BackendTask.Http
 import FatalError exposing (FatalError)
 import Json.Decode as Json
-import Json.Encode as Encode
 import Server.Session as Session exposing (Session)
 
 
@@ -40,11 +39,6 @@ fromSession session =
 decoder : Json.Decoder Token
 decoder =
     Json.map Token Json.string
-
-
-encode : Token -> Json.Value
-encode (Token token) =
-    Encode.string token
 
 
 
@@ -152,7 +146,7 @@ requestWithErrors method body maybeToken options =
         |> BackendTask.onError
             (\{ recoverable, fatal } ->
                 case recoverable of
-                    BackendTask.Http.BadStatus metadata stringBody ->
+                    BackendTask.Http.BadStatus _ stringBody ->
                         case Json.decodeString errorDecoder stringBody of
                             Ok errors ->
                                 Err errors

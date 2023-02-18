@@ -22,13 +22,12 @@ import MySession
 import Pages.Msg
 import Pages.PageUrl
 import Path
-import Platform.Sub
 import RouteBuilder
 import Server.Request
 import Server.Response
 import Shared
 import Utils.Maybe
-import View exposing (View)
+import View
 
 
 type alias Model =
@@ -204,7 +203,7 @@ action routeParams =
         |> MySession.withUser
             (\{ token, parsedRequest } ->
                 case parsedRequest of
-                    ( formResponse, parsedForm ) ->
+                    ( _, parsedForm ) ->
                         case parsedForm of
                             Ok (Action { slug, setFavorite }) ->
                                 case token of

@@ -3,7 +3,7 @@ module Route.Settings exposing (ActionData, Data, Model, Msg, RouteParams, route
 import Api.User exposing (User)
 import BackendTask
 import Components.ErrorList
-import Effect exposing (Effect)
+import Effect
 import ErrorPage
 import FatalError
 import Form
@@ -19,14 +19,13 @@ import MySession
 import Pages.Msg
 import Pages.PageUrl
 import Path
-import Platform.Sub
 import Route
 import RouteBuilder
 import Server.Request
 import Server.Response
 import Shared
 import Utils.Maybe
-import View exposing (View)
+import View
 
 
 route : RouteBuilder.StatefulRoute RouteParams Data ActionData Model Msg
@@ -151,7 +150,7 @@ data :
 data routeParams =
     Server.Request.succeed ()
         |> MySession.withUser
-            (\{ token } ->
+            (\_ ->
                 BackendTask.succeed
                     (\maybeUser ->
                         case maybeUser of
@@ -177,7 +176,7 @@ action routeParams =
         |> MySession.withUser
             (\{ token, parsedRequest } ->
                 case parsedRequest of
-                    ( formResponse, parsedForm ) ->
+                    ( _, parsedForm ) ->
                         case parsedForm of
                             Ok (Action okForm) ->
                                 case token of
@@ -191,7 +190,7 @@ action routeParams =
                                                     \_ ->
                                                         Server.Response.render
                                                             (case updatedUser of
-                                                                Ok okUser ->
+                                                                Ok _ ->
                                                                     { errors = []
                                                                     , message = Just "User updated!"
                                                                     }

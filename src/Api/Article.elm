@@ -1,6 +1,6 @@
 module Api.Article exposing
     ( Article, decoder
-    , Listing, updateArticle
+    , Listing
     , list
     , get, create, update, delete
     , favorite, unfavorite
@@ -12,7 +12,7 @@ module Api.Article exposing
 {-|
 
 @docs Article, decoder
-@docs Listing, updateArticle
+@docs Listing
 @docs list, feed
 @docs get, create, update, delete
 @docs favorite, unfavorite
@@ -66,24 +66,6 @@ type alias Listing =
     , page : Int
     , totalPages : Int
     }
-
-
-updateArticle : Article -> Listing -> Listing
-updateArticle article listing =
-    let
-        articles : List Article
-        articles =
-            List.map
-                (\a ->
-                    if a.slug == article.slug then
-                        article
-
-                    else
-                        a
-                )
-                listing.articles
-    in
-    { listing | articles = articles }
 
 
 

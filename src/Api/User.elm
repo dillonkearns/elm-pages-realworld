@@ -1,6 +1,6 @@
 module Api.User exposing
     ( User
-    , decoder, encode
+    , decoder
     , authentication, registration, update
     ,  getUser
        --, authentication, registration, update
@@ -10,7 +10,7 @@ module Api.User exposing
 {-|
 
 @docs User
-@docs decoder, encode
+@docs decoder
 
 @docs authentication, registration, current, update
 
@@ -42,17 +42,6 @@ decoder =
         (Json.field "username" Json.string)
         (Json.field "bio" (Json.maybe Json.string))
         (Json.field "image" (Json.string |> Utils.Json.withDefault "https://static.productionready.io/images/smiley-cyrus.jpg"))
-
-
-encode : User -> Json.Value
-encode user =
-    Encode.object
-        [ ( "username", Encode.string user.username )
-        , ( "email", Encode.string user.email )
-        , ( "token", Api.Token.encode user.token )
-        , ( "image", Encode.string user.image )
-        , ( "bio", Utils.Json.maybe Encode.string user.bio )
-        ]
 
 
 authentication :

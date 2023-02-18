@@ -1,12 +1,9 @@
 module Components.ArticleList exposing (view)
 
 import Api.Article exposing (Article)
-import Api.Data exposing (Data)
 import Api.User exposing (User)
-import Components.IconButton as IconButton
 import Html exposing (..)
 import Html.Attributes exposing (alt, class, classList, src)
-import Html.Events as Events
 import Route
 import Utils.Maybe
 import Utils.Time

@@ -22,13 +22,12 @@ import MySession
 import Pages.Msg
 import Pages.PageUrl
 import Path
-import Platform.Sub
 import RouteBuilder
 import Server.Request
 import Server.Response
 import Shared
 import Utils.Maybe
-import View exposing (View)
+import View
 
 
 route : RouteBuilder.StatefulRoute RouteParams Data ActionData Model Msg
@@ -191,7 +190,7 @@ viewProfile app profile =
 
                               else
                                 Utils.Maybe.view app.data.user <|
-                                    \user ->
+                                    \_ ->
                                         Form.renderHtml []
                                             (\_ -> Nothing)
                                             app
@@ -348,7 +347,7 @@ action routeParams =
         |> MySession.withUser
             (\{ token, parsedRequest } ->
                 case parsedRequest of
-                    ( formResponse, parsedForm ) ->
+                    ( _, parsedForm ) ->
                         case parsedForm of
                             Ok (Favorite { slug, setFavorite }) ->
                                 case token of

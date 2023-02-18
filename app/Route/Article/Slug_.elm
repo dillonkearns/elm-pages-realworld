@@ -16,14 +16,13 @@ import Form.Validation
 import Form.Value
 import Head
 import Html exposing (..)
-import Html.Attributes exposing (attribute, class, placeholder, src, style)
+import Html.Attributes exposing (class, placeholder, src, style)
 import Layout
 import Markdown
 import MySession
 import Pages.Msg
 import Pages.PageUrl
 import Path
-import Platform.Sub
 import Route
 import RouteBuilder
 import Server.Request
@@ -31,7 +30,7 @@ import Server.Response
 import Shared
 import Utils.Maybe
 import Utils.Time
-import View exposing (View)
+import View
 
 
 route : RouteBuilder.StatefulRoute RouteParams Data ActionData Model Msg
@@ -219,14 +218,6 @@ favoriteForm =
                     article : Article
                     article =
                         formState.data
-
-                    ellipsesIfInProgress : String
-                    ellipsesIfInProgress =
-                        if formState.isTransitioning then
-                            "..."
-
-                        else
-                            ""
                 in
                 [ if formState.data.favorited then
                     IconButton.view
@@ -531,7 +522,7 @@ action routeParams =
         |> MySession.withUser
             (\{ token, parsedRequest } ->
                 case parsedRequest of
-                    ( formResponse, parsedForm ) ->
+                    ( _, parsedForm ) ->
                         case parsedForm |> Debug.log "formAction" of
                             Ok (Favorite { slug, setFavorite }) ->
                                 case token of

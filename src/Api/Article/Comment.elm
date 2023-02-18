@@ -12,13 +12,11 @@ module Api.Article.Comment exposing
 
 -}
 
-import Api.Data exposing (Data)
 import Api.Profile exposing (Profile)
 import Api.Token exposing (Token)
 import BackendTask exposing (BackendTask)
 import BackendTask.Http
 import FatalError exposing (FatalError)
-import Http
 import Iso8601
 import Json.Decode as Json
 import Json.Encode as Encode

@@ -19,13 +19,12 @@ import MySession
 import Pages.Msg
 import Pages.PageUrl
 import Path
-import Platform.Sub
 import Route
 import RouteBuilder
 import Server.Request
 import Server.Response
 import Shared
-import View exposing (View)
+import View
 
 
 route : RouteBuilder.StatefulRoute RouteParams Data ActionData Model Msg
@@ -210,7 +209,7 @@ action routeParams =
         |> MySession.withUser
             (\{ token, parsedRequest } ->
                 case parsedRequest of
-                    ( formResponse, parsedForm ) ->
+                    ( _, parsedForm ) ->
                         case parsedForm of
                             Ok (Action okForm) ->
                                 case token of

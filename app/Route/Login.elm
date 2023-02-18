@@ -18,7 +18,7 @@ import Form.Field
 import Form.FieldView
 import Form.Validation
 import Head
-import Html exposing (a, button, div, fieldset, h1, p, text)
+import Html exposing (button, div, fieldset, h1, p, text)
 import Html.Attributes exposing (class, placeholder)
 import Pages.Msg
 import Pages.PageUrl
