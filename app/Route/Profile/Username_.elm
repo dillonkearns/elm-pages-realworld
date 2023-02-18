@@ -192,23 +192,14 @@ viewProfile app profile =
                               else
                                 Utils.Maybe.view app.data.user <|
                                     \user ->
-                                        if profile.following then
-                                            IconButton.view
-                                                { color = IconButton.FilledGray
-                                                , icon = IconButton.Plus
-                                                , label = "Unfollow " ++ profile.username
-
-                                                --, onClick = ClickedUnfollow user profile
-                                                }
-
-                                        else
-                                            IconButton.view
-                                                { color = IconButton.OutlinedGray
-                                                , icon = IconButton.Plus
-                                                , label = "Follow " ++ profile.username
-
-                                                --, onClick = ClickedFollow user profile
-                                                }
+                                        Form.renderHtml []
+                                            (\_ -> Nothing)
+                                            app
+                                            app.data.profile
+                                            (Form.toDynamicFetcher
+                                                ("follow-" ++ app.data.profile.username)
+                                                followForm
+                                            )
                             ]
                         ]
                     ]
@@ -461,7 +452,7 @@ favoriteForm =
         |> Form.hiddenKind ( "kind", "favorite" ) "Expected kind."
 
 
-followForm : Form.HtmlForm String FollowAction Article Msg
+followForm : Form.HtmlForm String FollowAction Profile Msg
 followForm =
     (\setFollow ->
         { combine =
@@ -472,7 +463,7 @@ followForm =
                 let
                     author : Profile
                     author =
-                        formState.data.author
+                        formState.data
 
                     ellipsesIfInProgress : String
                     ellipsesIfInProgress =
@@ -499,7 +490,7 @@ followForm =
         }
     )
         |> Form.init
-        |> Form.hiddenField "set-follow" (Form.Field.checkbox |> Form.Field.withInitialValue (.author >> .following >> not >> Form.Value.bool))
+        |> Form.hiddenField "set-follow" (Form.Field.checkbox |> Form.Field.withInitialValue (.following >> not >> Form.Value.bool))
         |> Form.hiddenKind ( "kind", "follow" ) "Expected kind."
 
 
