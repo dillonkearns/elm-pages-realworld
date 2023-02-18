@@ -1,7 +1,7 @@
 module Route.Index exposing (ActionData, Data, Model, Msg, RouteParams, route)
 
 import Api.Article exposing (Article)
-import Api.Article.Filters as Filters
+import Api.Article.Filters as Filters exposing (Filters)
 import Api.Article.Tag exposing (Tag)
 import Api.User exposing (User)
 import BackendTask
@@ -12,16 +12,18 @@ import ErrorPage
 import FatalError
 import Form
 import Form.Field
+import Form.FieldView
 import Form.Validation
 import Form.Value
 import Head
 import Html exposing (..)
-import Html.Attributes exposing (class, classList)
+import Html.Attributes exposing (class, classList, href)
 import Layout
 import MySession
 import Pages.Msg
 import Pages.PageUrl
 import Path
+import Route
 import RouteBuilder
 import Server.Request
 import Server.Response
@@ -33,10 +35,6 @@ import View
 
 type alias Model =
     {}
-
-
-type Msg
-    = NoOp
 
 
 type alias RouteParams =
@@ -63,19 +61,6 @@ init pageUrl sharedModel app =
     ( {}, Effect.none )
 
 
-update :
-    Pages.PageUrl.PageUrl
-    -> Shared.Model
-    -> RouteBuilder.StaticPayload Data ActionData RouteParams
-    -> Msg
-    -> Model
-    -> ( Model, Effect.Effect msg )
-update pageUrl sharedModel app msg model =
-    case msg of
-        NoOp ->
-            ( model, Effect.none )
-
-
 subscriptions :
     Maybe Pages.PageUrl.PageUrl
     -> RouteParams
@@ -91,6 +76,7 @@ type alias Data =
     { tags : List Tag
     , activeTab : Tab
     , page : Int
+    , filters : Filters
     , listing : Api.Article.Listing
     , user : Maybe User
     }
@@ -104,35 +90,63 @@ data :
     RouteParams
     -> Server.Request.Parser (BackendTask.BackendTask FatalError.FatalError (Server.Response.Response Data ErrorPage.ErrorPage))
 data routeParams =
-    Server.Request.succeed
-        ()
+    Server.Request.formData (Form.initCombined identity filtersForm)
         |> MySession.withUser
-            (\{ token } ->
+            (\{ token, parsedRequest } ->
+                let
+                    ( page, maybeTag, useGlobal ) =
+                        case parsedRequest of
+                            ( _, Ok parsedFilters ) ->
+                                ( parsedFilters.page |> Maybe.withDefault 1
+                                , parsedFilters.tag
+                                , parsedFilters.page /= Nothing || parsedFilters.globalTab
+                                )
+
+                            _ ->
+                                ( 1, Nothing, False )
+                in
                 BackendTask.map2
                     (\tags listing ->
                         \user ->
                             Server.Response.render
                                 { tags = tags
                                 , activeTab =
-                                    -- TODO check query params for active tab
-                                    user
-                                        |> Maybe.map FeedFor
-                                        |> Maybe.withDefault Global
-                                , page =
-                                    -- TODO get page from query params
-                                    1
+                                    case maybeTag of
+                                        Just tag ->
+                                            TagFilter tag
+
+                                        Nothing ->
+                                            if useGlobal then
+                                                Global
+
+                                            else
+                                                user
+                                                    |> Maybe.map FeedFor
+                                                    |> Maybe.withDefault Global
+                                , page = page
                                 , listing = listing
+                                , filters =
+                                    Filters.create
+                                        |> applyMaybe maybeTag Filters.withTag
                                 , user = user
                                 }
                     )
                     Api.Article.Tag.list
-                    (Api.Article.list
-                        { page =
-                            -- TODO get page from query params
-                            1
-                        , filters = Filters.create
-                        , token = token
-                        }
+                    (case ( useGlobal, token, maybeTag ) of
+                        ( False, Just justToken, Nothing ) ->
+                            Api.Article.feed
+                                { page = page
+                                , token = justToken
+                                }
+
+                        _ ->
+                            Api.Article.list
+                                { page = page
+                                , filters =
+                                    Filters.create
+                                        |> applyMaybe maybeTag Filters.withTag
+                                , token = token
+                                }
                     )
             )
 
@@ -166,10 +180,18 @@ view maybeUrl shared model app =
                                 { user = app.data.user
                                 , articleListing = app.data.listing
                                 , toggleFavoriteView = toggleFavoriteView app
+                                , paginationView =
+                                    filtersForm
+                                        |> Form.toDynamicTransition "filters"
+                                        |> Form.withGetMethod
+                                        |> Form.renderHtml [] (\_ -> Nothing) app ( RenderPages, app.data.listing )
                                 }
                         )
                     , div [ class "col-md-3" ]
-                        [ viewTags app.data.tags
+                        [ filtersForm
+                            |> Form.toDynamicTransition "filters"
+                            |> Form.withGetMethod
+                            |> Form.renderHtml [] (\_ -> Nothing) app ( RenderTags app.data.tags, app.data.listing )
                         ]
                     ]
                 ]
@@ -219,10 +241,7 @@ action routeParams =
                                             , slug = slug
                                             }
                                             |> BackendTask.map
-                                                (\_ ->
-                                                    \_ ->
-                                                        Server.Response.render {}
-                                                )
+                                                (\_ _ -> Server.Response.render {})
 
                                     Nothing ->
                                         BackendTask.succeed (\_ -> Server.Response.render {})
@@ -243,72 +262,27 @@ type Tab
 
 
 
---fetchArticlesForTab :
---    Shared.Model
---    ->
---        { model
---            | page : Int
---            , activeTab : Tab
---        }
---    -> Cmd Msg
---fetchArticlesForTab shared model =
---    case model.activeTab of
---        Global ->
---            Api.Article.list
---                { filters = Filters.create
---                , page = model.page
---                , token = Maybe.map .token shared.user
---                , onResponse = GotArticles
---                }
---
---        FeedFor user ->
---            Api.Article.feed
---                { token = user.token
---                , page = model.page
---                , onResponse = GotArticles
---                }
---
---        TagFilter tag ->
---            Api.Article.list
---                { filters =
---                    Filters.create
---                        |> Filters.withTag tag
---                , page = model.page
---                , token = Maybe.map .token shared.user
---                , onResponse = GotArticles
---                }
 -- UPDATE
---type Msg
---    = SelectedTab Tab
---    | ClickedPage Int
---update : Shared.Model -> Msg -> Model -> ( Model, Cmd Msg )
---update shared msg model =
---    case msg of
---        SelectedTab tab ->
---            let
---                newModel : Model
---                newModel =
---                    { model
---                        | activeTab = tab
---                        , listing = Api.Data.Loading
---                        , page = 1
---                    }
---            in
---            ( newModel
---            , fetchArticlesForTab shared newModel
---            )
---        ClickedPage page_ ->
---            let
---                newModel : Model
---                newModel =
---                    { model
---                        | listing = Api.Data.Loading
---                        , page = page_
---                    }
---            in
---            ( newModel
---            , fetchArticlesForTab shared newModel
---            )
+
+
+type Msg
+    = NoOp
+
+
+update :
+    Pages.PageUrl.PageUrl
+    -> Shared.Model
+    -> RouteBuilder.StaticPayload Data ActionData RouteParams
+    -> Msg
+    -> Model
+    -> ( Model, Effect.Effect msg )
+update pageUrl sharedModel app msg model =
+    case msg of
+        NoOp ->
+            ( model, Effect.none )
+
+
+
 -- VIEW
 
 
@@ -322,20 +296,18 @@ viewTabs maybeUser activeTab =
             [ Utils.Maybe.view maybeUser <|
                 \user ->
                     li [ class "nav-item" ]
-                        [ button
-                            [ class "nav-link"
-                            , classList [ ( "active", activeTab == FeedFor user ) ]
-
-                            --, Events.onClick (SelectedTab (FeedFor user))
-                            ]
-                            [ text "Your Feed" ]
+                        [ Route.Index
+                            |> Route.link
+                                [ class "nav-link"
+                                , classList [ ( "active", activeTab == FeedFor user ) ]
+                                ]
+                                [ text "Your Feed" ]
                         ]
             , li [ class "nav-item" ]
-                [ button
+                [ a
                     [ class "nav-link"
                     , classList [ ( "active", activeTab == Global ) ]
-
-                    --, Events.onClick (SelectedTab Global)
+                    , href "/?tab=global"
                     ]
                     [ text "Global Feed" ]
                 ]
@@ -346,24 +318,6 @@ viewTabs maybeUser activeTab =
                 _ ->
                     text ""
             ]
-        ]
-
-
-viewTags : List Tag -> Html msg
-viewTags tags =
-    div [ class "sidebar" ]
-        [ p [] [ text "Popular Tags" ]
-        , div [ class "tag-list" ] <|
-            List.map
-                (\tag ->
-                    button
-                        [ class "tag-pill tag-default"
-
-                        --, Events.onClick (SelectedTab (TagFilter tag))
-                        ]
-                        [ text tag ]
-                )
-                tags
         ]
 
 
@@ -396,6 +350,95 @@ favoriteForm =
         |> Form.hiddenField "slug" (Form.Field.required "Required" Form.Field.text |> Form.Field.withInitialValue (.slug >> Form.Value.string))
         |> Form.hiddenField "set-favorite" (Form.Field.checkbox |> Form.Field.withInitialValue (.favorited >> not >> Form.Value.bool))
         |> Form.hiddenKind ( "kind", "favorite" ) "Expected kind."
+
+
+applyMaybe : Maybe a -> (a -> chain -> chain) -> chain -> chain
+applyMaybe maybe apply chain =
+    case maybe of
+        Just just ->
+            apply just chain
+
+        Nothing ->
+            chain
+
+
+type RenderMode
+    = RenderPages
+    | RenderTags (List Tag)
+
+
+type alias ParsedFilters =
+    { globalTab : Bool
+    , page : Maybe Int
+    , tag : Maybe String
+    }
+
+
+filtersForm : Form.HtmlForm String ParsedFilters ( RenderMode, Api.Article.Listing ) Msg
+filtersForm =
+    (\tab tag pageNumber ->
+        { combine =
+            Form.Validation.succeed
+                (\tabString tagString number ->
+                    ParsedFilters
+                        (tabString == Just "global")
+                        number
+                        tagString
+                        |> Debug.log "parsedFilters"
+                )
+                |> Form.Validation.andMap tab
+                |> Form.Validation.andMap tag
+                |> Form.Validation.andMap pageNumber
+        , view =
+            \formState ->
+                let
+                    listing : Api.Article.Listing
+                    listing =
+                        Tuple.second formState.data
+
+                    viewPage : Int -> Html msg
+                    viewPage page =
+                        li
+                            [ class "page-item"
+                            , classList [ ( "active", listing.page == page ) ]
+                            ]
+                            [ pageNumber
+                                |> Form.FieldView.valueButton (String.fromInt page)
+                                    [ class "page-link"
+                                    ]
+                                    [ text (String.fromInt page) ]
+                            ]
+                in
+                case Tuple.first formState.data of
+                    RenderPages ->
+                        [ List.range 1 listing.totalPages
+                            |> List.map viewPage
+                            |> ul [ class "pagination" ]
+                        ]
+
+                    RenderTags tags ->
+                        [ div [ class "sidebar" ]
+                            [ p [] [ text "Popular Tags" ]
+                            , div [ class "tag-list" ] <|
+                                List.map
+                                    (\tagText ->
+                                        tag
+                                            |> Form.FieldView.valueButton tagText
+                                                [ class "tag-pill tag-default" ]
+                                                [ text tagText ]
+                                    )
+                                    tags
+                            ]
+                        ]
+        }
+    )
+        |> Form.init
+        |> Form.field "tab" Form.Field.text
+        |> Form.field "tag" Form.Field.text
+        |> Form.field "page"
+            (Form.Field.int { invalid = \_ -> "Expected int." }
+                |> Form.Field.withInitialValue (Tuple.second >> .page >> Form.Value.int)
+            )
 
 
 type alias FavoriteAction =

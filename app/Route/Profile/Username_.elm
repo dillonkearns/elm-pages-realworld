@@ -196,10 +196,7 @@ viewProfile app profile =
                                             (\_ -> Nothing)
                                             app
                                             app.data.profile
-                                            (Form.toDynamicFetcher
-                                                ("follow-" ++ app.data.profile.username)
-                                                followForm
-                                            )
+                                            (Form.toDynamicFetcher ("follow-" ++ app.data.profile.username) followForm)
                             ]
                         ]
                     ]
@@ -242,6 +239,13 @@ viewProfile app profile =
                             { user = app.data.user
                             , articleListing = app.data.listing
                             , toggleFavoriteView = toggleFavoriteView app
+                            , paginationView =
+                                Html.text "TODO"
+
+                            --filtersForm
+                            --    |> Form.toDynamicTransition "filters"
+                            --    |> Form.withGetMethod
+                            --    |> Form.renderHtml [] (\_ -> Nothing) app ( RenderPages, app.data.listing )
                             }
                     )
                 ]
@@ -363,10 +367,7 @@ action routeParams =
                                             , slug = slug
                                             }
                                             |> BackendTask.map
-                                                (\_ ->
-                                                    \_ ->
-                                                        Server.Response.render {}
-                                                )
+                                                (\_ _ -> Server.Response.render {})
 
                                     Nothing ->
                                         BackendTask.succeed (\_ -> Server.Response.render {})
@@ -384,10 +385,7 @@ action routeParams =
                                             , username = routeParams.username
                                             }
                                             |> BackendTask.map
-                                                (\_ ->
-                                                    \_ ->
-                                                        Server.Response.render {}
-                                                )
+                                                (\_ _ -> Server.Response.render {})
 
                                     Nothing ->
                                         BackendTask.succeed (\_ -> Server.Response.render {})

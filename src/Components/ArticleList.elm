@@ -13,34 +13,13 @@ view :
     { user : Maybe User
     , articleListing : Api.Article.Listing
     , toggleFavoriteView : Article -> Html msg
-
-    --, onPageClick : Int -> msg
+    , paginationView : Html msg
     }
     -> List (Html msg)
 view options =
-    let
-        listing =
-            options.articleListing
-
-        viewPage : Int -> Html msg
-        viewPage page =
-            li
-                [ class "page-item"
-                , classList [ ( "active", listing.page == page ) ]
-                ]
-                [ button
-                    [ class "page-link"
-
-                    --, Events.onClick (options.onPageClick page)
-                    ]
-                    [ text (String.fromInt page) ]
-                ]
-    in
     List.concat
-        [ List.map (viewArticlePreview options) listing.articles
-        , [ List.range 1 listing.totalPages
-                |> List.map viewPage
-                |> ul [ class "pagination" ]
+        [ List.map (viewArticlePreview options) options.articleListing.articles
+        , [ options.paginationView
           ]
         ]
 

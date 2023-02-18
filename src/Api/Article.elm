@@ -1,10 +1,9 @@
 module Api.Article exposing
     ( Article, decoder
     , Listing
-    , list
+    , list, feed
     , get, create, update, delete
     , favorite, unfavorite
-    --,feed
     )
 
 {-|
@@ -83,22 +82,16 @@ list options =
         }
 
 
-
---feed :
---    { token : Token
---    , page : Int
---    , onResponse : Data Listing -> msg
---    }
---    -> Cmd msg
---feed options =
---    Api.Token.get (Just options.token)
---        { url = "https://api.realworld.io/api/articles/feed" ++ Filters.pageQueryParameters options.page
---        , expect =
---            Api.Data.expectJson options.onResponse
---                (paginatedDecoder options.page)
---        }
---
---
+feed :
+    { token : Token
+    , page : Int
+    }
+    -> BackendTask FatalError Listing
+feed options =
+    Api.Token.get (Just options.token)
+        { url = "https://api.realworld.io/api/articles/feed" ++ Filters.pageQueryParameters options.page
+        , expect = paginatedDecoder options.page
+        }
 
 
 get :
