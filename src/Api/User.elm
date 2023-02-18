@@ -2,9 +2,7 @@ module Api.User exposing
     ( User
     , decoder
     , authentication, registration, update
-    ,  getUser
-       --, authentication, registration, update
-
+    , getUser
     )
 
 {-|

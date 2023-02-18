@@ -14,8 +14,6 @@ view :
     , articleListing : Api.Article.Listing
     , toggleFavoriteView : Article -> Html msg
 
-    --, onFavorite : User -> Article -> msg
-    --, onUnfavorite : User -> Article -> msg
     --, onPageClick : Int -> msg
     }
     -> List (Html msg)
@@ -51,9 +49,6 @@ viewArticlePreview :
     { options
         | user : Maybe User
         , toggleFavoriteView : Article -> Html msg
-
-        --, onFavorite : User -> Article -> msg
-        --, onUnfavorite : User -> Article -> msg
     }
     -> Article
     -> Html msg
