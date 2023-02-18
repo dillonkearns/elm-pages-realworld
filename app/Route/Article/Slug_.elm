@@ -28,6 +28,7 @@ import RouteBuilder
 import Server.Request
 import Server.Response
 import Shared
+import Utils.Form exposing (inProgressText)
 import Utils.Maybe
 import Utils.Time
 import View
@@ -223,18 +224,14 @@ favoriteForm =
                     IconButton.view
                         { color = IconButton.FilledGreen
                         , icon = IconButton.Heart
-                        , label =
-                            --" " ++ String.fromInt article.favoritesCount ++ ellipsesIfInProgress
-                            "Unfavorite Post (" ++ String.fromInt article.favoritesCount ++ ")"
+                        , label = "Unfavorite Post (" ++ String.fromInt article.favoritesCount ++ ")"
                         }
 
                   else
                     IconButton.view
                         { color = IconButton.OutlinedGreen
                         , icon = IconButton.Heart
-                        , label =
-                            --" " ++ String.fromInt article.favoritesCount ++ ellipsesIfInProgress
-                            "Favorite Post (" ++ String.fromInt article.favoritesCount ++ ")"
+                        , label = "Favorite Post (" ++ String.fromInt article.favoritesCount ++ ")"
                         }
                 ]
         }
@@ -254,31 +251,18 @@ followForm =
                 |> Form.Validation.andMap setFollow
         , view =
             \formState ->
-                let
-                    author : Profile
-                    author =
-                        formState.data.author
-
-                    ellipsesIfInProgress : String
-                    ellipsesIfInProgress =
-                        if formState.isTransitioning then
-                            "..."
-
-                        else
-                            ""
-                in
-                [ if author.following then
+                [ if formState.data.author.following then
                     IconButton.view
                         { color = IconButton.FilledGray
                         , icon = IconButton.Plus
-                        , label = "Unfollow " ++ author.username ++ ellipsesIfInProgress
+                        , label = inProgressText formState <| "Unfollow " ++ formState.data.author.username
                         }
 
                   else
                     IconButton.view
                         { color = IconButton.OutlinedGray
                         , icon = IconButton.Plus
-                        , label = "Follow " ++ author.username ++ ellipsesIfInProgress
+                        , label = inProgressText formState <| "Follow " ++ formState.data.author.username
                         }
                 ]
         }
@@ -317,19 +301,10 @@ deleteArticleForm =
         Form.Validation.succeed ()
     , view =
         \formState ->
-            let
-                ellipsesIfInProgress : String
-                ellipsesIfInProgress =
-                    if formState.isTransitioning then
-                        "..."
-
-                    else
-                        ""
-            in
             [ IconButton.view
                 { color = IconButton.OutlinedRed
                 , icon = IconButton.Trash
-                , label = "Delete article" ++ ellipsesIfInProgress
+                , label = inProgressText formState "Delete article"
                 }
             ]
     }
@@ -345,15 +320,6 @@ commentForm =
                 |> Form.Validation.andMap comment
         , view =
             \formState ->
-                let
-                    ellipsesIfInProgress : String
-                    ellipsesIfInProgress =
-                        if formState.isTransitioning then
-                            "..."
-
-                        else
-                            ""
-                in
                 [ div [ class "card-block" ]
                     [ Form.FieldView.input
                         [ class "form-control"
@@ -364,7 +330,7 @@ commentForm =
                 , div [ class "card-footer" ]
                     [ img [ class "comment-author-img", src formState.data.image ] []
                     , button [ class "btn btn-sm btn-primary", Html.Attributes.disabled formState.isTransitioning ]
-                        [ text ("Post Comment" ++ ellipsesIfInProgress) ]
+                        [ text (inProgressText formState "Post Comment") ]
                     ]
                 ]
         }
@@ -534,14 +500,9 @@ action routeParams =
                                  else
                                     Api.Article.unfavorite
                                 )
-                                    { token = justToken
-                                    , slug = slug
-                                    }
+                                    { token = justToken, slug = slug }
                                     |> BackendTask.map
-                                        (\_ ->
-                                            \_ ->
-                                                Server.Response.render {}
-                                        )
+                                        (\_ _ -> Server.Response.render {})
 
                             Ok (Follow { username, setFollowing }) ->
                                 (if setFollowing then
@@ -550,14 +511,9 @@ action routeParams =
                                  else
                                     Api.Profile.unfollow
                                 )
-                                    { token = justToken
-                                    , username = username
-                                    }
+                                    { token = justToken, username = username }
                                     |> BackendTask.map
-                                        (\_ ->
-                                            \_ ->
-                                                Server.Response.render {}
-                                        )
+                                        (\_ _ -> Server.Response.render {})
 
                             Ok (SubmitComment comment) ->
                                 Api.Article.Comment.create
@@ -566,10 +522,7 @@ action routeParams =
                                     , comment = { body = comment }
                                     }
                                     |> BackendTask.map
-                                        (\_ ->
-                                            \_ ->
-                                                Server.Response.render {}
-                                        )
+                                        (\_ _ -> Server.Response.render {})
 
                             Ok (DeleteComment commentId) ->
                                 Api.Article.Comment.delete
@@ -578,10 +531,7 @@ action routeParams =
                                     , commentId = commentId
                                     }
                                     |> BackendTask.map
-                                        (\_ ->
-                                            \_ ->
-                                                Server.Response.render {}
-                                        )
+                                        (\_ _ -> Server.Response.render {})
 
                             Ok DeleteArticle ->
                                 Api.Article.delete
@@ -589,10 +539,7 @@ action routeParams =
                                     , slug = routeParams.slug
                                     }
                                     |> BackendTask.map
-                                        (\_ ->
-                                            \_ ->
-                                                Route.redirectTo Route.Index
-                                        )
+                                        (\_ _ -> Route.redirectTo Route.Index)
 
                             Err _ ->
                                 BackendTask.succeed (\_ -> Server.Response.render {})

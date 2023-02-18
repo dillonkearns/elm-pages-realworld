@@ -26,6 +26,7 @@ import RouteBuilder
 import Server.Request
 import Server.Response
 import Shared
+import Utils.Form exposing (inProgressText)
 import Utils.Maybe
 import View
 
@@ -420,27 +421,19 @@ favoriteForm =
                     article : Article
                     article =
                         formState.data
-
-                    ellipsesIfInProgress : String
-                    ellipsesIfInProgress =
-                        if formState.isTransitioning then
-                            "..."
-
-                        else
-                            ""
                 in
                 [ if formState.data.favorited then
                     IconButton.view
                         { color = IconButton.FilledGreen
                         , icon = IconButton.Heart
-                        , label = " " ++ String.fromInt article.favoritesCount ++ ellipsesIfInProgress
+                        , label = inProgressText formState <| " " ++ String.fromInt article.favoritesCount
                         }
 
                   else
                     IconButton.view
                         { color = IconButton.OutlinedGreen
                         , icon = IconButton.Heart
-                        , label = " " ++ String.fromInt article.favoritesCount ++ ellipsesIfInProgress
+                        , label = inProgressText formState <| " " ++ String.fromInt article.favoritesCount
                         }
                 ]
         }
@@ -459,31 +452,18 @@ followForm =
                 |> Form.Validation.andMap setFollow
         , view =
             \formState ->
-                let
-                    author : Profile
-                    author =
-                        formState.data
-
-                    ellipsesIfInProgress : String
-                    ellipsesIfInProgress =
-                        if formState.isTransitioning then
-                            "..."
-
-                        else
-                            ""
-                in
-                [ if author.following then
+                [ if formState.data.following then
                     IconButton.view
                         { color = IconButton.FilledGray
                         , icon = IconButton.Plus
-                        , label = "Unfollow " ++ author.username ++ ellipsesIfInProgress
+                        , label = inProgressText formState <| "Unfollow " ++ formState.data.username
                         }
 
                   else
                     IconButton.view
                         { color = IconButton.OutlinedGray
                         , icon = IconButton.Plus
-                        , label = "Follow " ++ author.username ++ ellipsesIfInProgress
+                        , label = inProgressText formState <| "Follow " ++ formState.data.username
                         }
                 ]
         }
