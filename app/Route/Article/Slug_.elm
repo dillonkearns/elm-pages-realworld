@@ -172,14 +172,13 @@ viewArticleMeta app article =
 viewControls : RouteBuilder.StaticPayload Data ActionData RouteParams -> Article -> User -> List (Html (Pages.Msg.Msg Msg))
 viewControls app article user =
     if article.author.username == user.username then
-        [ a
-            [ class "btn btn-outline-secondary btn-sm"
-
-            --, href ("/editor/" ++ article.slug)
-            ]
-            [ i [ class "ion-edit" ] []
-            , text "Edit article"
-            ]
+        [ Route.Editor__Slug__ { slug = Just article.slug }
+            |> Route.link
+                [ class "btn btn-outline-secondary btn-sm"
+                ]
+                [ i [ class "ion-edit" ] []
+                , text "Edit article"
+                ]
         , Form.renderHtml
             [ style "display" "inline"
             ]

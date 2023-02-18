@@ -2,7 +2,7 @@ module Api.Article exposing
     ( Article, decoder
     , Listing, updateArticle
     , list
-    , get, create, delete
+    , get, create, update, delete
     , favorite, unfavorite
     --,feed
     --, get, create, update, delete
@@ -168,42 +168,38 @@ create options =
         }
 
 
-
---update :
---    { token : Token
---    , slug : String
---    , article :
---        { article
---            | title : String
---            , description : String
---            , body : String
---        }
---    , onResponse : Data Article -> msg
---    }
---    -> Cmd msg
---update options =
---    let
---        body : Json.Value
---        body =
---            Encode.object
---                [ ( "article"
---                  , Encode.object
---                        [ ( "title", Encode.string options.article.title )
---                        , ( "description", Encode.string options.article.description )
---                        , ( "body", Encode.string options.article.body )
---                        ]
---                  )
---                ]
---    in
---    Api.Token.put (Just options.token)
---        { url = "https://api.realworld.io/api/articles/" ++ options.slug
---        , body = Http.jsonBody body
---        , expect =
---            Api.Data.expectJson options.onResponse
---                (Json.field "article" decoder)
---        }
---
---
+update :
+    { slug : String }
+    ->
+        { token : Token
+        , article :
+            { article
+                | title : String
+                , description : String
+                , body : String
+            }
+        }
+    -> BackendTask FatalError (Result (List String) Article)
+update { slug } options =
+    let
+        body : Json.Value
+        body =
+            Encode.object
+                [ ( "article"
+                  , Encode.object
+                        [ ( "title", Encode.string options.article.title )
+                        , ( "description", Encode.string options.article.description )
+                        , ( "body", Encode.string options.article.body )
+                        ]
+                  )
+                ]
+    in
+    Api.Token.requestWithErrors "PUT"
+        (BackendTask.Http.jsonBody body)
+        (Just options.token)
+        { url = "https://api.realworld.io/api/articles/" ++ slug
+        , expect = Json.field "article" decoder
+        }
 
 
 delete :

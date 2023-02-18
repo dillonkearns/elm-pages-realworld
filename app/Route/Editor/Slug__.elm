@@ -1,6 +1,7 @@
-module Route.Editor exposing (ActionData, Data, Model, Msg, RouteParams, route)
+module Route.Editor.Slug__ exposing (ActionData, Data, Model, Msg, RouteParams, route)
 
 import Api.Article exposing (Article)
+import Api.User exposing (User)
 import BackendTask
 import Effect
 import ErrorPage
@@ -9,9 +10,11 @@ import Form
 import Form.Field
 import Form.FieldView
 import Form.Validation
+import Form.Value
 import Head
 import Html exposing (..)
 import Html.Attributes exposing (class, placeholder)
+import Layout
 import MySession
 import Pages.Msg
 import Pages.PageUrl
@@ -45,7 +48,9 @@ type alias Model =
 
 
 type alias Data =
-    {}
+    { article : Maybe Article
+    , user : User
+    }
 
 
 init :
@@ -100,10 +105,17 @@ view :
     -> RouteBuilder.StaticPayload Data ActionData RouteParams
     -> View.View (Pages.Msg.Msg Msg)
 view maybeUrl sharedModel model app =
-    { title = "New Article"
+    { title =
+        case app.routeParams.slug of
+            Just _ ->
+                "Editing Article"
+
+            Nothing ->
+                "New Article"
     , body =
         [ editorView app
         ]
+            |> Layout.view (Just app.data.user)
     }
 
 
@@ -112,13 +124,24 @@ editorView app =
         [ div [ class "container page" ]
             [ div [ class "row" ]
                 [ div [ class "col-md-6 offset-md-3 col-xs-12" ]
-                    [ h1 [ class "text-xs-center" ] [ text "New Article" ]
+                    [ h1 [ class "text-xs-center" ]
+                        [ text
+                            (case app.routeParams.slug of
+                                Just _ ->
+                                    "Edit Article"
+
+                                Nothing ->
+                                    "New Article"
+                            )
+                        ]
                     , br [] []
                     , Form.renderHtml
                         []
                         (\_ -> Nothing)
                         app
-                        { errors = app.action |> Maybe.map .errors |> Maybe.withDefault [] }
+                        { errors = app.action |> Maybe.map .errors |> Maybe.withDefault []
+                        , article = app.data.article
+                        }
                         (Form.toDynamicTransition "form" form)
                     ]
                 ]
@@ -127,7 +150,8 @@ editorView app =
 
 
 type alias RouteParams =
-    {}
+    { slug : Maybe String
+    }
 
 
 type alias ActionData =
@@ -139,12 +163,38 @@ data :
     RouteParams
     -> Server.Request.Parser (BackendTask.BackendTask FatalError.FatalError (Server.Response.Response Data ErrorPage.ErrorPage))
 data routeParams =
-    Server.Request.succeed
-        (BackendTask.succeed
-            (Server.Response.render
-                {}
+    Server.Request.succeed ()
+        |> MySession.withUser
+            (\{ token } ->
+                case token of
+                    Just justToken ->
+                        routeParams.slug
+                            |> Maybe.map
+                                (\slug ->
+                                    Api.Article.get
+                                        { token = Just justToken
+                                        , slug = slug
+                                        }
+                                        |> BackendTask.map Just
+                                )
+                            |> Maybe.withDefault (BackendTask.succeed Nothing)
+                            |> BackendTask.map
+                                (\article maybeUser ->
+                                    case maybeUser of
+                                        Just user ->
+                                            Server.Response.render
+                                                { article = article
+                                                , user = user
+                                                }
+
+                                        Nothing ->
+                                            Route.redirectTo Route.Login
+                                )
+
+                    _ ->
+                        BackendTask.succeed
+                            (\_ -> Route.redirectTo Route.Login)
             )
-        )
 
 
 head : RouteBuilder.StaticPayload Data ActionData RouteParams -> List Head.Tag
@@ -175,7 +225,13 @@ action routeParams =
                                                     Err errors ->
                                                         Server.Response.render { errors = errors }
                                             )
-                                            (Api.Article.create
+                                            ((case routeParams.slug of
+                                                Just slug ->
+                                                    Api.Article.update { slug = slug }
+
+                                                Nothing ->
+                                                    Api.Article.create
+                                             )
                                                 { token = justToken
                                                 , article =
                                                     { title = okForm.title
@@ -202,7 +258,14 @@ action routeParams =
             )
 
 
-form : Form.HtmlForm String ParsedForm { errors : List String } Msg
+form :
+    Form.HtmlForm
+        String
+        ParsedForm
+        { article : Maybe Article
+        , errors : List String
+        }
+        Msg
 form =
     (\title description body tags ->
         { combine =
@@ -216,15 +279,6 @@ form =
             \formState ->
                 let
                     fieldView label field large =
-                        --Html.div
-                        --    []
-                        --    [ Html.label
-                        --        []
-                        --        [ Html.text (label ++ " ")
-                        --        , Form.FieldView.input [] field
-                        --        , errorsView formState.errors field
-                        --        ]
-                        --    ]
                         fieldset [ class "form-group" ]
                             [ field
                                 |> Form.FieldView.input
@@ -247,13 +301,29 @@ form =
                             [ class "btn btn-lg pull-xs-right btn-primary"
                             , Html.Attributes.disabled True
                             ]
-                            [ text "Publishing..." ]
+                            [ text
+                                (case formState.data.article of
+                                    Just _ ->
+                                        "Saving..."
+
+                                    _ ->
+                                        "Publishing..."
+                                )
+                            ]
 
                       else
                         button
                             [ class "btn btn-lg pull-xs-right btn-primary"
                             ]
-                            [ text "Publish" ]
+                            [ text
+                                (case formState.data.article of
+                                    Just _ ->
+                                        "Save"
+
+                                    _ ->
+                                        "Publish"
+                                )
+                            ]
                     ]
                 , case formState.data.errors of
                     [] ->
@@ -266,14 +336,24 @@ form =
         }
     )
         |> Form.init
-        |> Form.field "title" (Form.Field.required "Required" Form.Field.text)
-        |> Form.field "description" (Form.Field.required "Required" Form.Field.text)
+        |> Form.field "title"
+            (Form.Field.required "Required" Form.Field.text
+                |> Form.Field.withOptionalInitialValue (.article >> Maybe.map .title >> Maybe.map Form.Value.string)
+            )
+        |> Form.field "description"
+            (Form.Field.required "Required" Form.Field.text
+                |> Form.Field.withOptionalInitialValue (.article >> Maybe.map .description >> Maybe.map Form.Value.string)
+            )
         |> Form.field "body"
             (Form.Field.textarea
                 { rows = Just 8, cols = Nothing }
                 (Form.Field.required "Required" Form.Field.text)
+                |> Form.Field.withOptionalInitialValue (.article >> Maybe.map .body >> Maybe.map Form.Value.string)
             )
-        |> Form.field "tags" Form.Field.text
+        |> Form.field "tags"
+            (Form.Field.text
+                |> Form.Field.withOptionalInitialValue (.article >> Maybe.map .tags >> Maybe.map (String.join ", ") >> Maybe.map Form.Value.string)
+            )
 
 
 type Action
