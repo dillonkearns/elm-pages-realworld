@@ -521,100 +521,78 @@ action routeParams =
     Server.Request.formData formHandlers
         |> MySession.withUser
             (\{ token, parsedRequest } ->
-                case parsedRequest of
-                    ( _, parsedForm ) ->
-                        case parsedForm |> Debug.log "formAction" of
+                case ( token, parsedRequest ) of
+                    ( Nothing, _ ) ->
+                        BackendTask.succeed (\_ -> Server.Response.render {})
+
+                    ( Just justToken, ( _, parsedForm ) ) ->
+                        case parsedForm of
                             Ok (Favorite { slug, setFavorite }) ->
-                                case token of
-                                    Just justToken ->
-                                        (if setFavorite then
-                                            Api.Article.favorite
+                                (if setFavorite then
+                                    Api.Article.favorite
 
-                                         else
-                                            Api.Article.unfavorite
+                                 else
+                                    Api.Article.unfavorite
+                                )
+                                    { token = justToken
+                                    , slug = slug
+                                    }
+                                    |> BackendTask.map
+                                        (\_ ->
+                                            \_ ->
+                                                Server.Response.render {}
                                         )
-                                            { token = justToken
-                                            , slug = slug
-                                            }
-                                            |> BackendTask.map
-                                                (\_ ->
-                                                    \_ ->
-                                                        Server.Response.render {}
-                                                )
-
-                                    Nothing ->
-                                        BackendTask.succeed (\_ -> Server.Response.render {})
 
                             Ok (Follow { username, setFollowing }) ->
-                                case token of
-                                    Just justToken ->
-                                        (if setFollowing then
-                                            Api.Profile.follow
+                                (if setFollowing then
+                                    Api.Profile.follow
 
-                                         else
-                                            Api.Profile.unfollow
+                                 else
+                                    Api.Profile.unfollow
+                                )
+                                    { token = justToken
+                                    , username = username
+                                    }
+                                    |> BackendTask.map
+                                        (\_ ->
+                                            \_ ->
+                                                Server.Response.render {}
                                         )
-                                            { token = justToken
-                                            , username = username
-                                            }
-                                            |> BackendTask.map
-                                                (\_ ->
-                                                    \_ ->
-                                                        Server.Response.render {}
-                                                )
-
-                                    Nothing ->
-                                        BackendTask.succeed (\_ -> Server.Response.render {})
 
                             Ok (SubmitComment comment) ->
-                                case token of
-                                    Just justToken ->
-                                        Api.Article.Comment.create
-                                            { token = justToken
-                                            , articleSlug = routeParams.slug
-                                            , comment = { body = comment }
-                                            }
-                                            |> BackendTask.map
-                                                (\_ ->
-                                                    \_ ->
-                                                        Server.Response.render {}
-                                                )
-
-                                    Nothing ->
-                                        BackendTask.succeed (\_ -> Server.Response.render {})
+                                Api.Article.Comment.create
+                                    { token = justToken
+                                    , articleSlug = routeParams.slug
+                                    , comment = { body = comment }
+                                    }
+                                    |> BackendTask.map
+                                        (\_ ->
+                                            \_ ->
+                                                Server.Response.render {}
+                                        )
 
                             Ok (DeleteComment commentId) ->
-                                case token of
-                                    Just justToken ->
-                                        Api.Article.Comment.delete
-                                            { token = justToken
-                                            , articleSlug = routeParams.slug
-                                            , commentId = commentId
-                                            }
-                                            |> BackendTask.map
-                                                (\_ ->
-                                                    \_ ->
-                                                        Server.Response.render {}
-                                                )
-
-                                    Nothing ->
-                                        BackendTask.succeed (\_ -> Server.Response.render {})
+                                Api.Article.Comment.delete
+                                    { token = justToken
+                                    , articleSlug = routeParams.slug
+                                    , commentId = commentId
+                                    }
+                                    |> BackendTask.map
+                                        (\_ ->
+                                            \_ ->
+                                                Server.Response.render {}
+                                        )
 
                             Ok DeleteArticle ->
-                                case token of
-                                    Just justToken ->
-                                        Api.Article.delete
-                                            { token = justToken
-                                            , slug = routeParams.slug
-                                            }
-                                            |> BackendTask.map
-                                                (\_ ->
-                                                    \_ ->
-                                                        Route.redirectTo Route.Index
-                                                )
-
-                                    Nothing ->
-                                        BackendTask.succeed (\_ -> Server.Response.render {})
+                                Api.Article.delete
+                                    { token = justToken
+                                    , slug = routeParams.slug
+                                    }
+                                    |> BackendTask.map
+                                        (\_ ->
+                                            \_ ->
+                                                Route.redirectTo Route.Index
+                                        )
 
                             Err _ ->
                                 BackendTask.succeed (\_ -> Server.Response.render {})
