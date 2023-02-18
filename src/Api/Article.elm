@@ -2,7 +2,7 @@ module Api.Article exposing
     ( Article, decoder
     , Listing, updateArticle
     , list
-    , get, delete
+    , get, create, delete
     , favorite, unfavorite
     --,feed
     --, get, create, update, delete
@@ -20,13 +20,11 @@ module Api.Article exposing
 -}
 
 import Api.Article.Filters as Filters exposing (Filters)
-import Api.Data exposing (Data)
 import Api.Profile exposing (Profile)
 import Api.Token exposing (Token)
 import BackendTask exposing (BackendTask)
 import BackendTask.Http
 import FatalError exposing (FatalError)
-import Http
 import Iso8601
 import Json.Decode as Json
 import Json.Encode as Encode
@@ -135,45 +133,42 @@ get options =
         }
 
 
+create :
+    { token : Token
+    , article :
+        { article
+            | title : String
+            , description : String
+            , body : String
+            , tags : List String
+        }
+    }
+    -> BackendTask FatalError (Result (List String) Article)
+create options =
+    let
+        body : Json.Value
+        body =
+            Encode.object
+                [ ( "article"
+                  , Encode.object
+                        [ ( "title", Encode.string options.article.title )
+                        , ( "description", Encode.string options.article.description )
+                        , ( "body", Encode.string options.article.body )
+                        , ( "tagList", Encode.list Encode.string options.article.tags )
+                        ]
+                  )
+                ]
+    in
+    Api.Token.requestWithErrors "POST"
+        (BackendTask.Http.jsonBody body)
+        (Just options.token)
+        { url = "https://api.realworld.io/api/articles"
+        , expect =
+            Json.field "article" decoder
+        }
 
---
---
---create :
---    { token : Token
---    , article :
---        { article
---            | title : String
---            , description : String
---            , body : String
---            , tags : List String
---        }
---    , onResponse : Data Article -> msg
---    }
---    -> Cmd msg
---create options =
---    let
---        body : Json.Value
---        body =
---            Encode.object
---                [ ( "article"
---                  , Encode.object
---                        [ ( "title", Encode.string options.article.title )
---                        , ( "description", Encode.string options.article.description )
---                        , ( "body", Encode.string options.article.body )
---                        , ( "tagList", Encode.list Encode.string options.article.tags )
---                        ]
---                  )
---                ]
---    in
---    Api.Token.post (Just options.token)
---        { url = "https://api.realworld.io/api/articles"
---        , body = Http.jsonBody body
---        , expect =
---            Api.Data.expectJson options.onResponse
---                (Json.field "article" decoder)
---        }
---
---
+
+
 --update :
 --    { token : Token
 --    , slug : String
