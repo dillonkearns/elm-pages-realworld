@@ -5,8 +5,6 @@ module Api.Article exposing
     , get, create, update, delete
     , favorite, unfavorite
     --,feed
-    --, get, create, update, delete
-    --, favorite, unfavorite
     )
 
 {-|
