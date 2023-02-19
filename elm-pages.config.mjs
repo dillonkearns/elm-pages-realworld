@@ -1,7 +1,9 @@
 import { defineConfig } from "vite";
+import adapter from "./adapter.mjs";
 
 export default {
   vite: defineConfig({}),
+  adapter,
   headTagsTemplate(context) {
     return `
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
