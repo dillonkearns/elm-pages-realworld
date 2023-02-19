@@ -233,7 +233,7 @@ form =
         |> Form.init
         |> Form.field "username" (Form.Field.required "Required" Form.Field.text)
         |> Form.field "email" (Form.Field.required "Required" Form.Field.text)
-        |> Form.field "password" (Form.Field.required "Required" Form.Field.text)
+        |> Form.field "password" (Form.Field.required "Required" Form.Field.text |> Form.Field.password)
 
 
 type Action
