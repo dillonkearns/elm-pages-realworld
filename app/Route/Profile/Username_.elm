@@ -12,11 +12,12 @@ import ErrorPage
 import FatalError
 import Form
 import Form.Field
+import Form.FieldView
 import Form.Validation
 import Form.Value
 import Head
 import Html exposing (..)
-import Html.Attributes exposing (class, src)
+import Html.Attributes exposing (class, classList, href, src)
 import Layout
 import MySession
 import Pages.Msg
@@ -65,79 +66,11 @@ type Tab
 
 
 
---fetchArticlesBy : Maybe Token -> String -> Int -> Cmd Msg
---fetchArticlesBy token username page_ =
---    Api.Article.list
---        { token = token
---        , page = page_
---        , filters = Filters.create |> Filters.byAuthor username
---        , onResponse = GotArticles
---        }
---
---
---fetchArticlesFavoritedBy : Maybe Token -> String -> Int -> Cmd Msg
---fetchArticlesFavoritedBy token username page_ =
---    Api.Article.list
---        { token = token
---        , page = page_
---        , filters =
---            Filters.create |> Filters.favoritedBy username
---        , onResponse = GotArticles
---        }
 -- UPDATE
 
 
 type Msg
     = NoOp
-
-
-
---type Msg
---    | Clicked Tab
---    | ClickedPage Int
---
---
---update : Shared.Model -> Msg -> Model -> ( Model, Cmd Msg )
---update shared msg model =
---    case msg of
---        Clicked MyArticles ->
---            ( { model
---                | selectedTab = MyArticles
---                , listing = Api.Data.Loading
---                , page = 1
---              }
---            , fetchArticlesBy (Maybe.map .token shared.user) model.username 1
---            )
---
---        Clicked FavoritedArticles ->
---            ( { model
---                | selectedTab = FavoritedArticles
---                , listing = Api.Data.Loading
---                , page = 1
---              }
---            , fetchArticlesFavoritedBy (Maybe.map .token shared.user) model.username 1
---            )
---
---        ClickedPage page_ ->
---            let
---                fetch : Maybe Token -> String -> Int -> Cmd Msg
---                fetch =
---                    case model.selectedTab of
---                        MyArticles ->
---                            fetchArticlesBy
---
---                        FavoritedArticles ->
---                            fetchArticlesFavoritedBy
---            in
---            ( { model
---                | listing = Api.Data.Loading
---                , page = page_
---              }
---            , fetch
---                (shared.user |> Maybe.map .token)
---                model.username
---                page_
---            )
 
 
 subscriptions :
@@ -212,11 +145,16 @@ viewProfile app profile =
         viewTab : Tab -> Html (Pages.Msg.Msg Msg)
         viewTab tab =
             li [ class "nav-item" ]
-                [ button
+                [ a
                     [ class "nav-link"
+                    , href
+                        (if tab == FavoritedArticles then
+                            "?tab=favorites"
 
-                    --, Events.onClick (Clicked tab)
-                    --, classList [ ( "active", tab == model.selectedTab ) ]
+                         else
+                            "?tab=mine"
+                        )
+                    , classList [ ( "active", tab == app.data.selectedTab ) ]
                     ]
                     [ text
                         (case tab of
@@ -240,12 +178,10 @@ viewProfile app profile =
                             , articleListing = app.data.listing
                             , toggleFavoriteView = toggleFavoriteView app
                             , paginationView =
-                                Html.text "TODO"
-
-                            --filtersForm
-                            --    |> Form.toDynamicTransition "filters"
-                            --    |> Form.withGetMethod
-                            --    |> Form.renderHtml [] (\_ -> Nothing) app ( RenderPages, app.data.listing )
+                                filtersForm
+                                    |> Form.toDynamicTransition "filters"
+                                    |> Form.withGetMethod
+                                    |> Form.renderHtml [] (\_ -> Nothing) app app.data.listing
                             }
                     )
                 ]
@@ -304,10 +240,20 @@ data :
     RouteParams
     -> Server.Request.Parser (BackendTask.BackendTask FatalError.FatalError (Server.Response.Response Data ErrorPage.ErrorPage))
 data routeParams =
-    Server.Request.succeed
-        ()
+    Server.Request.formData (Form.initCombined identity filtersForm)
         |> MySession.withUser
-            (\{ token } ->
+            (\{ token, parsedRequest } ->
+                let
+                    ( page, viewFavorites ) =
+                        case parsedRequest of
+                            ( _, Ok parsedFilters ) ->
+                                ( parsedFilters.page |> Maybe.withDefault 1
+                                , parsedFilters.page /= Nothing || parsedFilters.globalTab
+                                )
+
+                            _ ->
+                                ( 1, False )
+                in
                 BackendTask.map2
                     (\profile listing ->
                         \user ->
@@ -316,10 +262,12 @@ data routeParams =
                                 , profile = profile
                                 , selectedTab =
                                     -- TODO check query params for active tab
-                                    MyArticles
-                                , page =
-                                    -- TODO get page from query params
-                                    1
+                                    if viewFavorites then
+                                        FavoritedArticles
+
+                                    else
+                                        MyArticles
+                                , page = page
                                 , listing = listing
                                 }
                     )
@@ -329,10 +277,13 @@ data routeParams =
                         }
                     )
                     (Api.Article.list
-                        { page =
-                            -- TODO get page from query params
-                            1
-                        , filters = Filters.create |> Filters.byAuthor routeParams.username
+                        { page = page
+                        , filters =
+                            if viewFavorites then
+                                Filters.create |> Filters.favoritedBy routeParams.username
+
+                            else
+                                Filters.create |> Filters.byAuthor routeParams.username
                         , token = token
                         }
                     )
@@ -480,3 +431,51 @@ formHandlers : Form.ServerForms String Action
 formHandlers =
     Form.initCombined Favorite favoriteForm
         |> Form.combine Follow followForm
+
+
+type alias ParsedFilters =
+    { globalTab : Bool
+    , page : Maybe Int
+    }
+
+
+filtersForm : Form.HtmlForm String ParsedFilters Api.Article.Listing Msg
+filtersForm =
+    (\tab pageNumber ->
+        { combine =
+            Form.Validation.succeed
+                (\tabString number ->
+                    ParsedFilters
+                        (tabString == Just "favorites")
+                        number
+                )
+                |> Form.Validation.andMap tab
+                |> Form.Validation.andMap pageNumber
+        , view =
+            \formState ->
+                let
+                    viewPage : Int -> Html msg
+                    viewPage page =
+                        li
+                            [ class "page-item"
+                            , classList [ ( "active", formState.data.page == page ) ]
+                            ]
+                            [ pageNumber
+                                |> Form.FieldView.valueButton (String.fromInt page)
+                                    [ class "page-link"
+                                    ]
+                                    [ text (String.fromInt page) ]
+                            ]
+                in
+                [ List.range 1 formState.data.totalPages
+                    |> List.map viewPage
+                    |> ul [ class "pagination" ]
+                ]
+        }
+    )
+        |> Form.init
+        |> Form.field "tab" Form.Field.text
+        |> Form.field "page"
+            (Form.Field.int { invalid = \_ -> "Expected int." }
+                |> Form.Field.withInitialValue (.page >> Form.Value.int)
+            )
