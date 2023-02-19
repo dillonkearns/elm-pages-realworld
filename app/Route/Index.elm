@@ -369,8 +369,8 @@ type RenderMode
 
 type alias ParsedFilters =
     { globalTab : Bool
-    , page : Maybe Int
     , tag : Maybe String
+    , page : Maybe Int
     }
 
 
@@ -379,14 +379,11 @@ filtersForm =
     (\tab tag pageNumber ->
         { combine =
             Form.Validation.succeed
-                (\tabString tagString number ->
-                    ParsedFilters
-                        (tabString == Just "global")
-                        number
-                        tagString
-                        |> Debug.log "parsedFilters"
-                )
-                |> Form.Validation.andMap tab
+                ParsedFilters
+                |> Form.Validation.andMap
+                    (tab
+                        |> Form.Validation.map (\tabString -> tabString == Just "global")
+                    )
                 |> Form.Validation.andMap tag
                 |> Form.Validation.andMap pageNumber
         , view =
