@@ -14,12 +14,6 @@ view user inner =
         [ Components.Navbar.view
             { user = user
             , currentRoute = Route.Index
-
-            --Utils.Route.fromUrl req.url
-            --, onSignOut = toMsg MenuClicked --toMsg ClickedSignOut
-            , onSignOut =
-                -- TODO add signout form
-                Pages.Msg.FormFieldEvent Json.Encode.null
             }
         , div [ class "page" ] inner
         ]

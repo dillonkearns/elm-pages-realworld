@@ -3,14 +3,12 @@ module Components.Navbar exposing (view)
 import Api.User exposing (User)
 import Html exposing (..)
 import Html.Attributes exposing (class, classList)
-import Html.Events as Events
 import Route exposing (Route)
 
 
 view :
     { user : Maybe User
     , currentRoute : Route
-    , onSignOut : msg
     }
     -> Html msg
 view options =
@@ -27,11 +25,17 @@ view options =
                                 , ( "Settings", Route.Settings )
                                 ]
                             , [ li [ class "nav-item" ]
-                                    [ a
-                                        [ class "nav-link"
-                                        , Events.onClick options.onSignOut
+                                    [ form
+                                        [ Html.Attributes.action "/logout"
+                                        , Html.Attributes.method "POST"
                                         ]
-                                        [ text "Sign out" ]
+                                        [ button
+                                            [ class "nav-link"
+                                            , Html.Attributes.style "border" "none"
+                                            , Html.Attributes.style "background" "none"
+                                            ]
+                                            [ text "Sign out" ]
+                                        ]
                                     ]
                               ]
                             ]
