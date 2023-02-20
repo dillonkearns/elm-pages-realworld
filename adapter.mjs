@@ -195,7 +195,7 @@ function reqToJson(req, requestTime) {
     method: req.httpMethod,
     headers: req.headers,
     rawUrl: req.rawUrl,
-    body: req.body,
+    body: req.body || null,
     requestTime: Math.round(requestTime.getTime()),
     multiPartFormData: null,
   };
