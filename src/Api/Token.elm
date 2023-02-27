@@ -49,7 +49,7 @@ get :
     Maybe Token
     ->
         { url : String
-        , expect : Json.Decoder value
+        , expect : BackendTask.Http.Expect value
         }
     -> BackendTask FatalError value
 get =
@@ -60,7 +60,7 @@ delete :
     Maybe Token
     ->
         { url : String
-        , expect : Json.Decoder value
+        , expect : BackendTask.Http.Expect value
         }
     -> BackendTask FatalError value
 delete =
@@ -72,7 +72,7 @@ post :
     ->
         { url : String
         , body : BackendTask.Http.Body
-        , expect : Json.Decoder value
+        , expect : BackendTask.Http.Expect value
         }
     -> BackendTask FatalError value
 post token options =
@@ -98,7 +98,7 @@ request :
     ->
         { options
             | url : String
-            , expect : Json.Decoder value
+            , expect : BackendTask.Http.Expect value
         }
     -> BackendTask FatalError value
 request method body maybeToken options =
@@ -116,7 +116,7 @@ request method body maybeToken options =
         , timeoutInMs = Just (1000 * 60) -- 60 second timeout
         , retries = Nothing
         }
-        (BackendTask.Http.expectJson options.expect)
+        options.expect
         |> BackendTask.allowFatal
 
 

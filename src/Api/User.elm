@@ -72,7 +72,7 @@ getUser maybeToken =
         Just token ->
             Api.Token.get (Just token)
                 { url = "https://api.realworld.io/api/user"
-                , expect = Json.field "user" decoder
+                , expect = Json.field "user" decoder |> BackendTask.Http.expectJson
                 }
                 |> BackendTask.map Just
 

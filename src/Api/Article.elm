@@ -78,7 +78,7 @@ list : { a | token : Maybe Token, page : Int, filters : Filters } -> BackendTask
 list options =
     Api.Token.get options.token
         { url = "https://api.realworld.io/api/articles/" ++ Filters.toQueryString options.page options.filters
-        , expect = paginatedDecoder options.page
+        , expect = paginatedDecoder options.page |> BackendTask.Http.expectJson
         }
 
 
@@ -90,7 +90,7 @@ feed :
 feed options =
     Api.Token.get (Just options.token)
         { url = "https://api.realworld.io/api/articles/feed" ++ Filters.pageQueryParameters options.page
-        , expect = paginatedDecoder options.page
+        , expect = paginatedDecoder options.page |> BackendTask.Http.expectJson
         }
 
 
@@ -102,7 +102,7 @@ get :
 get options =
     Api.Token.get options.token
         { url = "https://api.realworld.io/api/articles/" ++ options.slug
-        , expect = Json.field "article" decoder
+        , expect = Json.field "article" decoder |> BackendTask.Http.expectJson
         }
 
 
@@ -181,9 +181,10 @@ delete :
     }
     -> BackendTask FatalError ()
 delete options =
-    Api.Token.delete (Just options.token)
+    Api.Token.delete
+        (Just options.token)
         { url = "https://api.realworld.io/api/articles/" ++ options.slug
-        , expect = Json.succeed ()
+        , expect = BackendTask.Http.expectWhatever ()
         }
 
 
@@ -192,7 +193,7 @@ favorite options =
     Api.Token.post (Just options.token)
         { url = "https://api.realworld.io/api/articles/" ++ options.slug ++ "/favorite"
         , body = BackendTask.Http.emptyBody
-        , expect = Json.field "article" decoder
+        , expect = Json.field "article" decoder |> BackendTask.Http.expectJson
         }
 
 
@@ -200,7 +201,7 @@ unfavorite : { token : Token, slug : String } -> BackendTask FatalError Article
 unfavorite options =
     Api.Token.delete (Just options.token)
         { url = "https://api.realworld.io/api/articles/" ++ options.slug ++ "/favorite"
-        , expect = Json.field "article" decoder
+        , expect = Json.field "article" decoder |> BackendTask.Http.expectJson
         }
 
 

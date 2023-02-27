@@ -54,7 +54,7 @@ get :
 get options =
     Api.Token.get options.token
         { url = "https://api.realworld.io/api/articles/" ++ options.articleSlug ++ "/comments"
-        , expect = Json.field "comments" (Json.list decoder)
+        , expect = Json.field "comments" (Json.list decoder) |> BackendTask.Http.expectJson
         }
 
 
@@ -80,7 +80,7 @@ create options =
         { url = "https://api.realworld.io/api/articles/" ++ options.articleSlug ++ "/comments"
         , body = BackendTask.Http.jsonBody body
         , expect =
-            Json.field "comment" decoder
+            Json.field "comment" decoder |> BackendTask.Http.expectJson
         }
 
 
@@ -98,5 +98,5 @@ delete options =
                 ++ "/comments/"
                 ++ String.fromInt options.commentId
         , expect =
-            Json.succeed options.commentId
+            Json.succeed options.commentId |> BackendTask.Http.expectJson
         }

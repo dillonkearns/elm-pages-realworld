@@ -49,7 +49,7 @@ get :
 get options =
     Api.Token.get options.token
         { url = "https://api.realworld.io/api/profiles/" ++ options.username
-        , expect = Json.field "profile" decoder
+        , expect = Json.field "profile" decoder |> BackendTask.Http.expectJson
         }
 
 
@@ -62,7 +62,7 @@ follow options =
     Api.Token.post (Just options.token)
         { url = "https://api.realworld.io/api/profiles/" ++ options.username ++ "/follow"
         , body = BackendTask.Http.emptyBody
-        , expect = Json.field "profile" decoder
+        , expect = Json.field "profile" decoder |> BackendTask.Http.expectJson
         }
 
 
@@ -74,5 +74,5 @@ unfollow :
 unfollow options =
     Api.Token.delete (Just options.token)
         { url = "https://api.realworld.io/api/profiles/" ++ options.username ++ "/follow"
-        , expect = Json.field "profile" decoder
+        , expect = Json.field "profile" decoder |> BackendTask.Http.expectJson
         }
