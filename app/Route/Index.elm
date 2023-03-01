@@ -5,9 +5,10 @@ import Api.Article.Filters as Filters exposing (Filters)
 import Api.Article.Tag exposing (Tag)
 import Api.User exposing (User)
 import BackendTask
+import Browser.Dom as Dom
 import Components.ArticleList
 import Components.IconButton as IconButton
-import Effect
+import Effect exposing (Effect)
 import ErrorPage
 import FatalError
 import Form
@@ -28,6 +29,7 @@ import RouteBuilder
 import Server.Request
 import Server.Response
 import Shared
+import Task exposing (Task)
 import Utils.Form exposing (inProgressText)
 import Utils.Maybe
 import View
@@ -184,13 +186,15 @@ view maybeUrl shared model app =
                                     filtersForm
                                         |> Form.toDynamicTransition "filters"
                                         |> Form.withGetMethod
+                                        |> Form.withOnSubmit (\_ -> ScrollToTop)
                                         |> Form.renderHtml [] (\_ -> Nothing) app ( RenderPages, app.data.listing )
                                 }
                         )
                     , div [ class "col-md-3" ]
                         [ filtersForm
-                            |> Form.toDynamicTransition "filters"
+                            |> Form.toDynamicFetcher "filters"
                             |> Form.withGetMethod
+                            |> Form.withOnSubmit (\_ -> ScrollToTop)
                             |> Form.renderHtml [] (\_ -> Nothing) app ( RenderTags app.data.tags, app.data.listing )
                         ]
                     ]
@@ -267,6 +271,7 @@ type Tab
 
 type Msg
     = NoOp
+    | ScrollToTop
 
 
 update :
@@ -275,11 +280,21 @@ update :
     -> RouteBuilder.StaticPayload Data ActionData RouteParams
     -> Msg
     -> Model
-    -> ( Model, Effect.Effect msg )
+    -> ( Model, Effect Msg )
 update pageUrl sharedModel app msg model =
     case msg of
         NoOp ->
             ( model, Effect.none )
+
+        ScrollToTop ->
+            ( model
+            , Effect.fromCmd (scrollToTop |> Task.perform (\_ -> NoOp))
+            )
+
+
+scrollToTop : Task x ()
+scrollToTop =
+    Dom.setViewport 0 0 |> Task.onError (\_ -> Task.succeed ())
 
 
 
