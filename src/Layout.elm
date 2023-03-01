@@ -5,7 +5,7 @@ import Components.Navbar
 import Html exposing (..)
 import Html.Attributes exposing (class)
 import Json.Encode
-import Pages.Msg
+import PagesMsg exposing (PagesMsg)
 import Route
 
 

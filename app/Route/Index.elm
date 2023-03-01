@@ -20,8 +20,8 @@ import Html exposing (..)
 import Html.Attributes exposing (class, classList, href)
 import Layout
 import MySession
-import Pages.Msg
 import Pages.PageUrl
+import PagesMsg exposing (PagesMsg)
 import Path
 import Route
 import RouteBuilder
@@ -161,7 +161,7 @@ view :
     -> Shared.Model
     -> Model
     -> RouteBuilder.StaticPayload Data ActionData RouteParams
-    -> View.View (Pages.Msg.Msg Msg)
+    -> View.View (PagesMsg Msg)
 view maybeUrl shared model app =
     { title = ""
     , body =
@@ -201,7 +201,7 @@ view maybeUrl shared model app =
     }
 
 
-toggleFavoriteView : RouteBuilder.StaticPayload Data ActionData RouteParams -> Article -> Html (Pages.Msg.Msg Msg)
+toggleFavoriteView : RouteBuilder.StaticPayload Data ActionData RouteParams -> Article -> Html (PagesMsg Msg)
 toggleFavoriteView app article =
     Form.renderHtml []
         (\_ -> Nothing)

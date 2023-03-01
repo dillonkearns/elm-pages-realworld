@@ -9,8 +9,8 @@ import Form.Validation
 import Head
 import Html
 import Html.Attributes
-import Pages.Msg
 import Pages.PageUrl
+import PagesMsg exposing (PagesMsg)
 import Path
 import Platform.Sub
 import Route
@@ -104,7 +104,7 @@ view :
     -> Shared.Model
     -> Model
     -> RouteBuilder.StaticPayload Data ActionData RouteParams
-    -> View.View (Pages.Msg.Msg Msg)
+    -> View.View (PagesMsg Msg)
 view maybeUrl sharedModel model app =
     { title = "Logout"
     , body =

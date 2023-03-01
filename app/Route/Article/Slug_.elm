@@ -20,8 +20,8 @@ import Html.Attributes exposing (class, placeholder, src, style)
 import Layout
 import Markdown
 import MySession
-import Pages.Msg
 import Pages.PageUrl
+import PagesMsg exposing (PagesMsg)
 import Path
 import Route
 import RouteBuilder
@@ -103,7 +103,7 @@ view :
     -> Shared.Model
     -> Model
     -> RouteBuilder.StaticPayload Data ActionData RouteParams
-    -> View.View (Pages.Msg.Msg Msg)
+    -> View.View (PagesMsg Msg)
 view maybeUrl shared model app =
     { title = app.data.article.title
     , body =
@@ -113,7 +113,7 @@ view maybeUrl shared model app =
     }
 
 
-viewArticle : RouteBuilder.StaticPayload Data ActionData RouteParams -> Article -> Html (Pages.Msg.Msg Msg)
+viewArticle : RouteBuilder.StaticPayload Data ActionData RouteParams -> Article -> Html (PagesMsg Msg)
 viewArticle app article =
     div [ class "article-page" ]
         [ div [ class "banner" ]
@@ -143,7 +143,7 @@ viewArticle app article =
         ]
 
 
-viewArticleMeta : RouteBuilder.StaticPayload Data ActionData RouteParams -> Article -> Html (Pages.Msg.Msg Msg)
+viewArticleMeta : RouteBuilder.StaticPayload Data ActionData RouteParams -> Article -> Html (PagesMsg Msg)
 viewArticleMeta app article =
     div [ class "article-meta" ] <|
         List.concat
@@ -169,7 +169,7 @@ viewArticleMeta app article =
             ]
 
 
-viewControls : RouteBuilder.StaticPayload Data ActionData RouteParams -> Article -> User -> List (Html (Pages.Msg.Msg Msg))
+viewControls : RouteBuilder.StaticPayload Data ActionData RouteParams -> Article -> User -> List (Html (PagesMsg Msg))
 viewControls app article user =
     if article.author.username == user.username then
         [ Route.Editor__Slug__ { slug = Just article.slug }
@@ -373,7 +373,7 @@ formHandlers =
         |> Form.combine (\() -> DeleteArticle) deleteArticleForm
 
 
-viewCommentSection : RouteBuilder.StaticPayload Data ActionData RouteParams -> Article -> Html (Pages.Msg.Msg Msg)
+viewCommentSection : RouteBuilder.StaticPayload Data ActionData RouteParams -> Article -> Html (PagesMsg Msg)
 viewCommentSection app article =
     div [ class "row" ]
         [ div [ class "col-xs-12 col-md-8 offset-md-2" ] <|
@@ -395,7 +395,7 @@ viewCommentSection app article =
         ]
 
 
-viewComment : RouteBuilder.StaticPayload Data ActionData RouteParams -> Maybe User -> Comment -> Html (Pages.Msg.Msg Msg)
+viewComment : RouteBuilder.StaticPayload Data ActionData RouteParams -> Maybe User -> Comment -> Html (PagesMsg Msg)
 viewComment app currentUser comment =
     let
         viewCommentActions =

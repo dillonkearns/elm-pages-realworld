@@ -15,8 +15,8 @@ import Head
 import Html exposing (button, div, fieldset, h1, p, text)
 import Html.Attributes exposing (class, placeholder)
 import Layout
-import Pages.Msg
 import Pages.PageUrl
+import PagesMsg exposing (PagesMsg)
 import Path
 import Platform.Sub
 import Result
@@ -112,7 +112,7 @@ view :
     -> Shared.Model
     -> Model
     -> RouteBuilder.StaticPayload Data ActionData RouteParams
-    -> View.View (Pages.Msg.Msg Msg)
+    -> View.View (PagesMsg Msg)
 view maybeUrl sharedModel model app =
     { title = "Sign in"
     , body =

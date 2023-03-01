@@ -20,8 +20,8 @@ import Html exposing (..)
 import Html.Attributes exposing (class, classList, href, src)
 import Layout
 import MySession
-import Pages.Msg
 import Pages.PageUrl
+import PagesMsg exposing (PagesMsg)
 import Path
 import RouteBuilder
 import Server.Request
@@ -93,7 +93,7 @@ view :
     -> Shared.Model
     -> Model
     -> RouteBuilder.StaticPayload Data ActionData RouteParams
-    -> View.View (Pages.Msg.Msg Msg)
+    -> View.View (PagesMsg Msg)
 view maybeUrl sharedModel model app =
     { title = "Profile"
     , body =
@@ -102,14 +102,14 @@ view maybeUrl sharedModel model app =
     }
 
 
-viewProfile : RouteBuilder.StaticPayload Data ActionData RouteParams -> Profile -> Html (Pages.Msg.Msg Msg)
+viewProfile : RouteBuilder.StaticPayload Data ActionData RouteParams -> Profile -> Html (PagesMsg Msg)
 viewProfile app profile =
     let
         isViewingOwnProfile : Bool
         isViewingOwnProfile =
             Maybe.map .username app.data.user == Just profile.username
 
-        viewUserInfo : Html (Pages.Msg.Msg Msg)
+        viewUserInfo : Html (PagesMsg Msg)
         viewUserInfo =
             div [ class "user-info" ]
                 [ div [ class "container" ]
@@ -135,14 +135,14 @@ viewProfile app profile =
                     ]
                 ]
 
-        viewTabRow : Html (Pages.Msg.Msg Msg)
+        viewTabRow : Html (PagesMsg Msg)
         viewTabRow =
             div [ class "articles-toggle" ]
                 [ ul [ class "nav nav-pills outline-active" ]
                     (List.map viewTab [ MyArticles, FavoritedArticles ])
                 ]
 
-        viewTab : Tab -> Html (Pages.Msg.Msg Msg)
+        viewTab : Tab -> Html (PagesMsg Msg)
         viewTab tab =
             li [ class "nav-item" ]
                 [ a
@@ -189,7 +189,7 @@ viewProfile app profile =
         ]
 
 
-toggleFavoriteView : RouteBuilder.StaticPayload Data ActionData RouteParams -> Article -> Html (Pages.Msg.Msg Msg)
+toggleFavoriteView : RouteBuilder.StaticPayload Data ActionData RouteParams -> Article -> Html (PagesMsg Msg)
 toggleFavoriteView app article =
     Form.renderHtml []
         (\_ -> Nothing)

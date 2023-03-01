@@ -8,7 +8,7 @@
     "elm-version": "0.19.1",
     "dependencies": {
         "direct": {
-            "dillonkearns/elm-pages-v3-beta": "14.0.1",
+            "dillonkearns/elm-pages-v3-beta": "15.0.1",
             "elm/browser": "1.0.2",
             "elm/bytes": "1.0.8",
             "elm/core": "1.0.5",
@@ -42,7 +42,7 @@
             "fredcy/elm-parseint": "2.0.1",
             "jluckyiv/elm-utc-date-strings": "1.0.0",
             "justinmimbs/date": "4.0.1",
-            "mdgriffith/elm-codegen": "2.0.0",
+            "mdgriffith/elm-codegen": "2.1.0",
             "miniBill/elm-codec": "2.0.0",
             "miniBill/elm-unicode": "1.0.3",
             "noahzgordon/elm-color-extra": "1.0.2",

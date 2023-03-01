@@ -15,8 +15,8 @@ import Html exposing (..)
 import Html.Attributes exposing (class, placeholder)
 import Layout
 import MySession
-import Pages.Msg
 import Pages.PageUrl
+import PagesMsg exposing (PagesMsg)
 import Path
 import Route
 import RouteBuilder
@@ -95,7 +95,7 @@ view :
     -> Shared.Model
     -> Model
     -> RouteBuilder.StaticPayload Data ActionData RouteParams
-    -> View.View (Pages.Msg.Msg Msg)
+    -> View.View (PagesMsg Msg)
 view maybeUrl sharedModel model app =
     { title = "Sign up"
     , body =
