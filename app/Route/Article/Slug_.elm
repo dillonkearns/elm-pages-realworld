@@ -284,7 +284,6 @@ deleteCommentForm =
                 [ button
                     [ class "mod-options"
                     , Html.Attributes.disabled formState.isTransitioning
-                    , style "border" "none"
                     ]
                     [ i [ class "ion-trash-a" ] [] ]
                 ]
