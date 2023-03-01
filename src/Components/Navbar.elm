@@ -31,8 +31,7 @@ view options =
                                         ]
                                         [ button
                                             [ class "nav-link"
-                                            , Html.Attributes.style "border" "none"
-                                            , Html.Attributes.style "background" "none"
+                                            , Html.Attributes.style "cursor" "pointer"
                                             ]
                                             [ text "Sign out" ]
                                         ]
