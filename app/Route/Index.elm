@@ -192,7 +192,7 @@ view maybeUrl shared model app =
                         )
                     , div [ class "col-md-3" ]
                         [ filtersForm
-                            |> Form.toDynamicFetcher "filters"
+                            |> Form.toDynamicTransition "filters"
                             |> Form.withGetMethod
                             |> Form.withOnSubmit (\_ -> ScrollToTop)
                             |> Form.renderHtml [] (\_ -> Nothing) app ( RenderTags app.data.tags, app.data.listing )
