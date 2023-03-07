@@ -23,7 +23,7 @@ import MySession
 import Pages.PageUrl
 import PagesMsg exposing (PagesMsg)
 import Path
-import RouteBuilder
+import RouteBuilder exposing (App)
 import Server.Request
 import Server.Response
 import Shared
@@ -74,13 +74,12 @@ type Msg
 
 
 subscriptions :
-    Maybe Pages.PageUrl.PageUrl
-    -> RouteParams
+    RouteParams
     -> Path.Path
     -> Shared.Model
     -> Model
     -> Sub Msg
-subscriptions maybePageUrl routeParams path sharedModel model =
+subscriptions routeParams path shared model =
     Sub.none
 
 
@@ -89,12 +88,11 @@ subscriptions maybePageUrl routeParams path sharedModel model =
 
 
 view :
-    Maybe Pages.PageUrl.PageUrl
+    App Data ActionData RouteParams
     -> Shared.Model
     -> Model
-    -> RouteBuilder.StaticPayload Data ActionData RouteParams
     -> View.View (PagesMsg Msg)
-view maybeUrl sharedModel model app =
+view app shared model =
     { title = "Profile"
     , body =
         [ viewProfile app app.data.profile ]
@@ -102,7 +100,7 @@ view maybeUrl sharedModel model app =
     }
 
 
-viewProfile : RouteBuilder.StaticPayload Data ActionData RouteParams -> Profile -> Html (PagesMsg Msg)
+viewProfile : App Data ActionData RouteParams -> Profile -> Html (PagesMsg Msg)
 viewProfile app profile =
     let
         isViewingOwnProfile : Bool
@@ -125,11 +123,14 @@ viewProfile app profile =
                               else
                                 Utils.Maybe.view app.data.user <|
                                     \_ ->
-                                        Form.renderHtml []
-                                            (\_ -> Nothing)
-                                            app
-                                            app.data.profile
-                                            (Form.toDynamicFetcher ("follow-" ++ app.data.profile.username) followForm)
+                                        followForm
+                                            |> Form.toDynamicFetcher
+                                            |> Form.renderHtml
+                                                ("follow-" ++ app.data.profile.username)
+                                                []
+                                                (\_ -> Nothing)
+                                                app
+                                                app.data.profile
                             ]
                         ]
                     ]
@@ -179,9 +180,8 @@ viewProfile app profile =
                             , toggleFavoriteView = toggleFavoriteView app
                             , paginationView =
                                 filtersForm
-                                    |> Form.toDynamicTransition "filters"
                                     |> Form.withGetMethod
-                                    |> Form.renderHtml [] (\_ -> Nothing) app app.data.listing
+                                    |> Form.renderHtml "filters" [] (\_ -> Nothing) app app.data.listing
                             }
                     )
                 ]
@@ -189,21 +189,21 @@ viewProfile app profile =
         ]
 
 
-toggleFavoriteView : RouteBuilder.StaticPayload Data ActionData RouteParams -> Article -> Html (PagesMsg Msg)
+toggleFavoriteView : App Data ActionData RouteParams -> Article -> Html (PagesMsg Msg)
 toggleFavoriteView app article =
-    Form.renderHtml []
-        (\_ -> Nothing)
-        app
-        article
-        (Form.toDynamicFetcher
+    favoriteForm
+        |> Form.toDynamicFetcher
+        |> Form.renderHtml
             (if article.favorited then
                 "unfavorite-" ++ article.slug
 
              else
                 "favorite-" ++ article.slug
             )
-            favoriteForm
-        )
+            []
+            (\_ -> Nothing)
+            app
+            article
 
 
 type alias RouteParams =
@@ -211,22 +211,20 @@ type alias RouteParams =
 
 
 init :
-    Maybe Pages.PageUrl.PageUrl
+    App Data ActionData RouteParams
     -> Shared.Model
-    -> RouteBuilder.StaticPayload Data ActionData RouteParams
     -> ( Model, Effect.Effect Msg )
-init pageUrl sharedModel app =
+init app shared =
     ( {}, Effect.none )
 
 
 update :
-    Pages.PageUrl.PageUrl
+    App Data ActionData RouteParams
     -> Shared.Model
-    -> RouteBuilder.StaticPayload Data ActionData RouteParams
     -> Msg
     -> Model
     -> ( Model, Effect.Effect msg )
-update pageUrl sharedModel app msg model =
+update app shared msg model =
     case msg of
         NoOp ->
             ( model, Effect.none )
@@ -290,7 +288,7 @@ data routeParams =
             )
 
 
-head : RouteBuilder.StaticPayload Data ActionData RouteParams -> List Head.Tag
+head : App Data ActionData RouteParams -> List Head.Tag
 head app =
     []
 

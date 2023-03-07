@@ -179,7 +179,7 @@ createFile { moduleName, fields } =
             )
         |> Scaffold.Route.buildWithLocalState
             { view =
-                \{ maybeUrl, sharedModel, model, app } ->
+                \{ maybeUrl, shared, model, app } ->
                     Gen.View.make_.view
                         { title = moduleName |> String.join "." |> Elm.string
                         , body =
@@ -198,7 +198,7 @@ createFile { moduleName, fields } =
                                 )
                         }
             , update =
-                \{ pageUrl, sharedModel, app, msg, model } ->
+                \{ pageUrl, shared, app, msg, model } ->
                     Elm.Case.custom msg
                         (Type.named [] "Msg")
                         [ Elm.Case.branch0 "NoOp"
@@ -209,13 +209,13 @@ createFile { moduleName, fields } =
                             )
                         ]
             , init =
-                \{ pageUrl, sharedModel, app } ->
+                \{ pageUrl, shared, app } ->
                     Elm.tuple (Elm.record [])
                         (Effect.none
                             |> Elm.withType effectType
                         )
             , subscriptions =
-                \{ maybePageUrl, routeParams, path, sharedModel, model } ->
+                \{ maybePageUrl, routeParams, path, shared, model } ->
                     Gen.Platform.Sub.none
             , model =
                 Alias (Type.record [])

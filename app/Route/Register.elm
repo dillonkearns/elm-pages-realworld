@@ -19,7 +19,7 @@ import Pages.PageUrl
 import PagesMsg exposing (PagesMsg)
 import Path
 import Route
-import RouteBuilder
+import RouteBuilder exposing (App)
 import Server.Request
 import Server.Response
 import Shared
@@ -46,11 +46,10 @@ type alias Model =
 
 
 init :
-    Maybe Pages.PageUrl.PageUrl
+    App Data ActionData RouteParams
     -> Shared.Model
-    -> RouteBuilder.StaticPayload Data ActionData RouteParams
     -> ( Model, Effect.Effect Msg )
-init pageUrl sharedModel app =
+init app shared =
     ( {}, Effect.none )
 
 
@@ -63,26 +62,24 @@ type Msg
 
 
 update :
-    Pages.PageUrl.PageUrl
+    App Data ActionData RouteParams
     -> Shared.Model
-    -> RouteBuilder.StaticPayload Data ActionData RouteParams
     -> Msg
     -> Model
     -> ( Model, Effect.Effect msg )
-update pageUrl sharedModel app msg model =
+update app shared msg model =
     case msg of
         NoOp ->
             ( model, Effect.none )
 
 
 subscriptions :
-    Maybe Pages.PageUrl.PageUrl
-    -> RouteParams
+    RouteParams
     -> Path.Path
     -> Shared.Model
     -> Model
     -> Sub Msg
-subscriptions maybePageUrl routeParams path sharedModel model =
+subscriptions routeParams path shared model =
     Sub.none
 
 
@@ -91,12 +88,11 @@ subscriptions maybePageUrl routeParams path sharedModel model =
 
 
 view :
-    Maybe Pages.PageUrl.PageUrl
+    App Data ActionData RouteParams
     -> Shared.Model
     -> Model
-    -> RouteBuilder.StaticPayload Data ActionData RouteParams
     -> View.View (PagesMsg Msg)
-view maybeUrl sharedModel model app =
+view app shared model =
     { title = "Sign up"
     , body =
         [ div [ class "auth-page" ]
@@ -117,7 +113,7 @@ view maybeUrl sharedModel model app =
 
                             _ ->
                                 text ""
-                        , Form.renderHtml [] (\_ -> Nothing) app () (Form.toDynamicTransition "form" form)
+                        , Form.renderHtml "form" [] (\_ -> Nothing) app () form
                         ]
                     ]
                 ]
@@ -159,7 +155,7 @@ data routeParams =
             )
 
 
-head : RouteBuilder.StaticPayload Data ActionData RouteParams -> List Head.Tag
+head : App Data ActionData RouteParams -> List Head.Tag
 head app =
     []
 

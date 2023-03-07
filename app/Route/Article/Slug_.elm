@@ -20,11 +20,10 @@ import Html.Attributes exposing (class, placeholder, src, style)
 import Layout
 import Markdown
 import MySession
-import Pages.PageUrl
 import PagesMsg exposing (PagesMsg)
 import Path
 import Route
-import RouteBuilder
+import RouteBuilder exposing (App)
 import Server.Request
 import Server.Response
 import Shared
@@ -54,11 +53,10 @@ type alias Model =
 
 
 init :
-    Maybe Pages.PageUrl.PageUrl
+    App Data ActionData RouteParams
     -> Shared.Model
-    -> RouteBuilder.StaticPayload Data ActionData RouteParams
     -> ( Model, Effect.Effect Msg )
-init pageUrl sharedModel app =
+init app shared =
     ( {}, Effect.none )
 
 
@@ -71,26 +69,24 @@ type Msg
 
 
 update :
-    Pages.PageUrl.PageUrl
+    App Data ActionData RouteParams
     -> Shared.Model
-    -> RouteBuilder.StaticPayload Data ActionData RouteParams
     -> Msg
     -> Model
     -> ( Model, Effect.Effect msg )
-update pageUrl sharedModel app msg model =
+update app shared msg model =
     case msg of
         NoOp ->
             ( model, Effect.none )
 
 
 subscriptions :
-    Maybe Pages.PageUrl.PageUrl
-    -> RouteParams
+    RouteParams
     -> Path.Path
     -> Shared.Model
     -> Model
     -> Sub Msg
-subscriptions maybePageUrl routeParams path sharedModel model =
+subscriptions routeParams path shared model =
     Sub.none
 
 
@@ -99,12 +95,11 @@ subscriptions maybePageUrl routeParams path sharedModel model =
 
 
 view :
-    Maybe Pages.PageUrl.PageUrl
+    App Data ActionData RouteParams
     -> Shared.Model
     -> Model
-    -> RouteBuilder.StaticPayload Data ActionData RouteParams
     -> View.View (PagesMsg Msg)
-view maybeUrl shared model app =
+view app shared model =
     { title = app.data.article.title
     , body =
         [ viewArticle app app.data.article
@@ -113,7 +108,7 @@ view maybeUrl shared model app =
     }
 
 
-viewArticle : RouteBuilder.StaticPayload Data ActionData RouteParams -> Article -> Html (PagesMsg Msg)
+viewArticle : App Data ActionData RouteParams -> Article -> Html (PagesMsg Msg)
 viewArticle app article =
     div [ class "article-page" ]
         [ div [ class "banner" ]
@@ -143,7 +138,7 @@ viewArticle app article =
         ]
 
 
-viewArticleMeta : RouteBuilder.StaticPayload Data ActionData RouteParams -> Article -> Html (PagesMsg Msg)
+viewArticleMeta : App Data ActionData RouteParams -> Article -> Html (PagesMsg Msg)
 viewArticleMeta app article =
     div [ class "article-meta" ] <|
         List.concat
@@ -169,7 +164,7 @@ viewArticleMeta app article =
             ]
 
 
-viewControls : RouteBuilder.StaticPayload Data ActionData RouteParams -> Article -> User -> List (Html (PagesMsg Msg))
+viewControls : App Data ActionData RouteParams -> Article -> User -> List (Html (PagesMsg Msg))
 viewControls app article user =
     if article.author.username == user.username then
         [ Route.Editor__Slug__ { slug = Just article.slug }
@@ -179,30 +174,30 @@ viewControls app article user =
                 [ i [ class "ion-edit" ] []
                 , text "Edit article"
                 ]
-        , Form.renderHtml
+        , Form.renderHtml "delete-article"
             [ style "display" "inline"
             ]
             (\_ -> Nothing)
             app
             ()
-            (Form.toDynamicTransition "delete-article" deleteArticleForm)
+            deleteArticleForm
         ]
 
     else
-        [ Form.renderHtml
+        [ Form.renderHtml "follow"
             [ style "display" "inline"
             ]
             (\_ -> Nothing)
             app
             article
-            (Form.toDynamicTransition "follow" followForm)
-        , Form.renderHtml
+            followForm
+        , Form.renderHtml "favorite"
             [ style "display" "inline"
             ]
             (\_ -> Nothing)
             app
             article
-            (Form.toDynamicTransition "favorite" favoriteForm)
+            favoriteForm
         ]
 
 
@@ -372,19 +367,19 @@ formHandlers =
         |> Form.combine (\() -> DeleteArticle) deleteArticleForm
 
 
-viewCommentSection : RouteBuilder.StaticPayload Data ActionData RouteParams -> Article -> Html (PagesMsg Msg)
+viewCommentSection : App Data ActionData RouteParams -> Article -> Html (PagesMsg Msg)
 viewCommentSection app article =
     div [ class "row" ]
         [ div [ class "col-xs-12 col-md-8 offset-md-2" ] <|
             List.concat
                 [ case app.data.user of
                     Just user ->
-                        [ Form.renderHtml
+                        [ Form.renderHtml "submit-comment"
                             [ class "card comment-form" ]
                             (\_ -> Nothing)
                             app
                             user
-                            (Form.toDynamicTransition "submit-comment" commentForm)
+                            commentForm
                         ]
 
                     Nothing ->
@@ -394,20 +389,20 @@ viewCommentSection app article =
         ]
 
 
-viewComment : RouteBuilder.StaticPayload Data ActionData RouteParams -> Maybe User -> Comment -> Html (PagesMsg Msg)
+viewComment : App Data ActionData RouteParams -> Maybe User -> Comment -> Html (PagesMsg Msg)
 viewComment app currentUser comment =
     let
         viewCommentActions =
             Utils.Maybe.view currentUser <|
                 \user ->
                     if user.username == comment.author.username then
-                        Form.renderHtml
+                        Form.renderHtml ("delete-comment-" ++ String.fromInt comment.id)
                             [ style "display" "inline"
                             ]
                             (\_ -> Nothing)
                             app
                             comment.id
-                            (Form.toDynamicTransition ("delete-comment-" ++ String.fromInt comment.id) deleteCommentForm)
+                            deleteCommentForm
 
                     else
                         text ""
@@ -474,7 +469,7 @@ data routeParams =
             )
 
 
-head : RouteBuilder.StaticPayload Data ActionData RouteParams -> List Head.Tag
+head : App Data ActionData RouteParams -> List Head.Tag
 head app =
     []
 
