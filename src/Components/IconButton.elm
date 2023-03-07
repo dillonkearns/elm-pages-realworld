@@ -2,7 +2,6 @@ module Components.IconButton exposing (Color(..), Icon(..), view)
 
 import Html exposing (..)
 import Html.Attributes exposing (class)
-import Html.Events as Events
 
 
 type Color
@@ -23,7 +22,6 @@ view :
     { color : Color
     , icon : Icon
     , label : String
-    , onClick : msg
     }
     -> Html msg
 view options =
@@ -59,8 +57,7 @@ view options =
                     "btn-secondary"
     in
     button
-        [ Events.onClick options.onClick
-        , class ("btn btn-sm " ++ toButtonClass options.color)
+        [ class ("btn btn-sm " ++ toButtonClass options.color)
         ]
         [ i [ class (toIconClass options.icon) ] []
         , text options.label

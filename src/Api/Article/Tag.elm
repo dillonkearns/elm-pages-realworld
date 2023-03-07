@@ -1,7 +1,8 @@
 module Api.Article.Tag exposing (Tag, list)
 
-import Api.Data exposing (Data)
-import Http
+import BackendTask
+import BackendTask.Http
+import FatalError exposing (FatalError)
 import Json.Decode as Json
 
 
@@ -9,11 +10,8 @@ type alias Tag =
     String
 
 
-list : { onResponse : Data (List String) -> msg } -> Cmd msg
-list options =
-    Http.get
-        { url = "https://conduit.productionready.io/api/tags"
-        , expect =
-            Api.Data.expectJson options.onResponse
-                (Json.field "tags" (Json.list Json.string))
-        }
+list : BackendTask.BackendTask FatalError (List String)
+list =
+    BackendTask.Http.getJson "https://api.realworld.io/api/tags"
+        (Json.field "tags" (Json.list Json.string))
+        |> BackendTask.allowFatal

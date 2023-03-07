@@ -1,21 +1,23 @@
 module Api.User exposing
     ( User
-    , decoder, encode
+    , decoder
     , authentication, registration, update
+    , getUser
     )
 
 {-|
 
 @docs User
-@docs decoder, encode
+@docs decoder
 
 @docs authentication, registration, current, update
 
 -}
 
-import Api.Data exposing (Data)
 import Api.Token exposing (Token)
-import Http
+import BackendTask exposing (BackendTask)
+import BackendTask.Http
+import FatalError exposing (FatalError)
 import Json.Decode as Json
 import Json.Encode as Encode
 import Utils.Json
@@ -40,42 +42,42 @@ decoder =
         (Json.field "image" (Json.string |> Utils.Json.withDefault "https://static.productionready.io/images/smiley-cyrus.jpg"))
 
 
-encode : User -> Json.Value
-encode user =
-    Encode.object
-        [ ( "username", Encode.string user.username )
-        , ( "email", Encode.string user.email )
-        , ( "token", Api.Token.encode user.token )
-        , ( "image", Encode.string user.image )
-        , ( "bio", Utils.Json.maybe Encode.string user.bio )
-        ]
-
-
 authentication :
-    { user : { user | email : String, password : String }
-    , onResponse : Data User -> msg
-    }
-    -> Cmd msg
-authentication options =
+    { email : String, password : String }
+    -> BackendTask FatalError (Result (List String) User)
+authentication user =
     let
         body : Json.Value
         body =
             Encode.object
                 [ ( "user"
                   , Encode.object
-                        [ ( "email", Encode.string options.user.email )
-                        , ( "password", Encode.string options.user.password )
+                        [ ( "email", Encode.string user.email )
+                        , ( "password", Encode.string user.password )
                         ]
                   )
                 ]
     in
-    Http.post
-        { url = "https://conduit.productionready.io/api/users/login"
-        , body = Http.jsonBody body
-        , expect =
-            Api.Data.expectJson options.onResponse
-                (Json.field "user" decoder)
+    Api.Token.requestWithErrors "POST"
+        (BackendTask.Http.jsonBody body)
+        Nothing
+        { url = "https://api.realworld.io/api/users/login"
+        , expect = Json.field "user" decoder
         }
+
+
+getUser : Maybe Token -> BackendTask FatalError (Maybe User)
+getUser maybeToken =
+    case maybeToken of
+        Just token ->
+            Api.Token.get (Just token)
+                { url = "https://api.realworld.io/api/user"
+                , expect = Json.field "user" decoder |> BackendTask.Http.expectJson
+                }
+                |> BackendTask.map Just
+
+        Nothing ->
+            BackendTask.succeed Nothing
 
 
 registration :
@@ -85,9 +87,8 @@ registration :
             , email : String
             , password : String
         }
-    , onResponse : Data User -> msg
     }
-    -> Cmd msg
+    -> BackendTask FatalError (Result (List String) User)
 registration options =
     let
         body : Json.Value
@@ -102,12 +103,11 @@ registration options =
                   )
                 ]
     in
-    Http.post
-        { url = "https://conduit.productionready.io/api/users"
-        , body = Http.jsonBody body
-        , expect =
-            Api.Data.expectJson options.onResponse
-                (Json.field "user" decoder)
+    Api.Token.requestWithErrors "POST"
+        (BackendTask.Http.jsonBody body)
+        Nothing
+        { url = "https://api.realworld.io/api/users"
+        , expect = Json.field "user" decoder
         }
 
 
@@ -121,9 +121,8 @@ update :
             , image : String
             , bio : String
         }
-    , onResponse : Data User -> msg
     }
-    -> Cmd msg
+    -> BackendTask FatalError (Result (List String) User)
 update options =
     let
         body : Json.Value
@@ -148,10 +147,9 @@ update options =
                   )
                 ]
     in
-    Api.Token.put (Just options.token)
-        { url = "https://conduit.productionready.io/api/user"
-        , body = Http.jsonBody body
-        , expect =
-            Api.Data.expectJson options.onResponse
-                (Json.field "user" decoder)
+    Api.Token.put
+        (Just options.token)
+        { url = "https://api.realworld.io/api/user"
+        , body = BackendTask.Http.jsonBody body
+        , expect = Json.field "user" decoder
         }

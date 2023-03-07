@@ -1,6 +1,6 @@
 module Api.Article exposing
     ( Article, decoder
-    , Listing, updateArticle
+    , Listing
     , list, feed
     , get, create, update, delete
     , favorite, unfavorite
@@ -9,7 +9,7 @@ module Api.Article exposing
 {-|
 
 @docs Article, decoder
-@docs Listing, updateArticle
+@docs Listing
 @docs list, feed
 @docs get, create, update, delete
 @docs favorite, unfavorite
@@ -17,10 +17,11 @@ module Api.Article exposing
 -}
 
 import Api.Article.Filters as Filters exposing (Filters)
-import Api.Data exposing (Data)
 import Api.Profile exposing (Profile)
 import Api.Token exposing (Token)
-import Http
+import BackendTask exposing (BackendTask)
+import BackendTask.Http
+import FatalError exposing (FatalError)
 import Iso8601
 import Json.Decode as Json
 import Json.Encode as Encode
@@ -64,24 +65,6 @@ type alias Listing =
     }
 
 
-updateArticle : Article -> Listing -> Listing
-updateArticle article listing =
-    let
-        articles : List Article
-        articles =
-            List.map
-                (\a ->
-                    if a.slug == article.slug then
-                        article
-
-                    else
-                        a
-                )
-                listing.articles
-    in
-    { listing | articles = articles }
-
-
 
 -- ENDPOINTS
 
@@ -91,49 +74,35 @@ itemsPerPage =
     25
 
 
-list :
-    { token : Maybe Token
-    , filters : Filters
-    , page : Int
-    , onResponse : Data Listing -> msg
-    }
-    -> Cmd msg
+list : { a | token : Maybe Token, page : Int, filters : Filters } -> BackendTask FatalError Listing
 list options =
     Api.Token.get options.token
-        { url = "https://conduit.productionready.io/api/articles/" ++ Filters.toQueryString options.page options.filters
-        , expect =
-            Api.Data.expectJson options.onResponse
-                (paginatedDecoder options.page)
+        { url = "https://api.realworld.io/api/articles/" ++ Filters.toQueryString options.page options.filters
+        , expect = paginatedDecoder options.page |> BackendTask.Http.expectJson
         }
 
 
 feed :
     { token : Token
     , page : Int
-    , onResponse : Data Listing -> msg
     }
-    -> Cmd msg
+    -> BackendTask FatalError Listing
 feed options =
     Api.Token.get (Just options.token)
-        { url = "https://conduit.productionready.io/api/articles/feed" ++ Filters.pageQueryParameters options.page
-        , expect =
-            Api.Data.expectJson options.onResponse
-                (paginatedDecoder options.page)
+        { url = "https://api.realworld.io/api/articles/feed" ++ Filters.pageQueryParameters options.page
+        , expect = paginatedDecoder options.page |> BackendTask.Http.expectJson
         }
 
 
 get :
     { slug : String
     , token : Maybe Token
-    , onResponse : Data Article -> msg
     }
-    -> Cmd msg
+    -> BackendTask FatalError Article
 get options =
     Api.Token.get options.token
-        { url = "https://conduit.productionready.io/api/articles/" ++ options.slug
-        , expect =
-            Api.Data.expectJson options.onResponse
-                (Json.field "article" decoder)
+        { url = "https://api.realworld.io/api/articles/" ++ options.slug
+        , expect = Json.field "article" decoder |> BackendTask.Http.expectJson
         }
 
 
@@ -146,9 +115,8 @@ create :
             , body : String
             , tags : List String
         }
-    , onResponse : Data Article -> msg
     }
-    -> Cmd msg
+    -> BackendTask FatalError (Result (List String) Article)
 create options =
     let
         body : Json.Value
@@ -164,28 +132,28 @@ create options =
                   )
                 ]
     in
-    Api.Token.post (Just options.token)
-        { url = "https://conduit.productionready.io/api/articles"
-        , body = Http.jsonBody body
+    Api.Token.requestWithErrors "POST"
+        (BackendTask.Http.jsonBody body)
+        (Just options.token)
+        { url = "https://api.realworld.io/api/articles"
         , expect =
-            Api.Data.expectJson options.onResponse
-                (Json.field "article" decoder)
+            Json.field "article" decoder
         }
 
 
 update :
-    { token : Token
-    , slug : String
-    , article :
-        { article
-            | title : String
-            , description : String
-            , body : String
+    { slug : String }
+    ->
+        { token : Token
+        , article :
+            { article
+                | title : String
+                , description : String
+                , body : String
+            }
         }
-    , onResponse : Data Article -> msg
-    }
-    -> Cmd msg
-update options =
+    -> BackendTask FatalError (Result (List String) Article)
+update { slug } options =
     let
         body : Json.Value
         body =
@@ -199,58 +167,41 @@ update options =
                   )
                 ]
     in
-    Api.Token.put (Just options.token)
-        { url = "https://conduit.productionready.io/api/articles/" ++ options.slug
-        , body = Http.jsonBody body
-        , expect =
-            Api.Data.expectJson options.onResponse
-                (Json.field "article" decoder)
+    Api.Token.requestWithErrors "PUT"
+        (BackendTask.Http.jsonBody body)
+        (Just options.token)
+        { url = "https://api.realworld.io/api/articles/" ++ slug
+        , expect = Json.field "article" decoder
         }
 
 
 delete :
     { token : Token
     , slug : String
-    , onResponse : Data Article -> msg
     }
-    -> Cmd msg
+    -> BackendTask FatalError ()
 delete options =
-    Api.Token.delete (Just options.token)
-        { url = "https://conduit.productionready.io/api/articles/" ++ options.slug
-        , expect =
-            Api.Data.expectJson options.onResponse
-                (Json.field "article" decoder)
+    Api.Token.delete
+        (Just options.token)
+        { url = "https://api.realworld.io/api/articles/" ++ options.slug
+        , expect = BackendTask.Http.expectWhatever ()
         }
 
 
-favorite :
-    { token : Token
-    , slug : String
-    , onResponse : Data Article -> msg
-    }
-    -> Cmd msg
+favorite : { token : Token, slug : String } -> BackendTask FatalError Article
 favorite options =
     Api.Token.post (Just options.token)
-        { url = "https://conduit.productionready.io/api/articles/" ++ options.slug ++ "/favorite"
-        , body = Http.emptyBody
-        , expect =
-            Api.Data.expectJson options.onResponse
-                (Json.field "article" decoder)
+        { url = "https://api.realworld.io/api/articles/" ++ options.slug ++ "/favorite"
+        , body = BackendTask.Http.emptyBody
+        , expect = Json.field "article" decoder |> BackendTask.Http.expectJson
         }
 
 
-unfavorite :
-    { token : Token
-    , slug : String
-    , onResponse : Data Article -> msg
-    }
-    -> Cmd msg
+unfavorite : { token : Token, slug : String } -> BackendTask FatalError Article
 unfavorite options =
     Api.Token.delete (Just options.token)
-        { url = "https://conduit.productionready.io/api/articles/" ++ options.slug ++ "/favorite"
-        , expect =
-            Api.Data.expectJson options.onResponse
-                (Json.field "article" decoder)
+        { url = "https://api.realworld.io/api/articles/" ++ options.slug ++ "/favorite"
+        , expect = Json.field "article" decoder |> BackendTask.Http.expectJson
         }
 
 

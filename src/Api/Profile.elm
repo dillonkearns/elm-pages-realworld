@@ -12,9 +12,10 @@ module Api.Profile exposing
 
 -}
 
-import Api.Data exposing (Data)
 import Api.Token exposing (Token)
-import Http
+import BackendTask exposing (BackendTask)
+import BackendTask.Http
+import FatalError exposing (FatalError)
 import Json.Decode as Json
 import Utils.Json
 
@@ -43,44 +44,35 @@ decoder =
 get :
     { token : Maybe Token
     , username : String
-    , onResponse : Data Profile -> msg
     }
-    -> Cmd msg
+    -> BackendTask FatalError Profile
 get options =
     Api.Token.get options.token
-        { url = "https://conduit.productionready.io/api/profiles/" ++ options.username
-        , expect =
-            Api.Data.expectJson options.onResponse
-                (Json.field "profile" decoder)
+        { url = "https://api.realworld.io/api/profiles/" ++ options.username
+        , expect = Json.field "profile" decoder |> BackendTask.Http.expectJson
         }
 
 
 follow :
     { token : Token
     , username : String
-    , onResponse : Data Profile -> msg
     }
-    -> Cmd msg
+    -> BackendTask FatalError Profile
 follow options =
     Api.Token.post (Just options.token)
-        { url = "https://conduit.productionready.io/api/profiles/" ++ options.username ++ "/follow"
-        , body = Http.emptyBody
-        , expect =
-            Api.Data.expectJson options.onResponse
-                (Json.field "profile" decoder)
+        { url = "https://api.realworld.io/api/profiles/" ++ options.username ++ "/follow"
+        , body = BackendTask.Http.emptyBody
+        , expect = Json.field "profile" decoder |> BackendTask.Http.expectJson
         }
 
 
 unfollow :
     { token : Token
     , username : String
-    , onResponse : Data Profile -> msg
     }
-    -> Cmd msg
+    -> BackendTask FatalError Profile
 unfollow options =
     Api.Token.delete (Just options.token)
-        { url = "https://conduit.productionready.io/api/profiles/" ++ options.username ++ "/follow"
-        , expect =
-            Api.Data.expectJson options.onResponse
-                (Json.field "profile" decoder)
+        { url = "https://api.realworld.io/api/profiles/" ++ options.username ++ "/follow"
+        , expect = Json.field "profile" decoder |> BackendTask.Http.expectJson
         }

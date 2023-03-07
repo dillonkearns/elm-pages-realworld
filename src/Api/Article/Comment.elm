@@ -12,10 +12,11 @@ module Api.Article.Comment exposing
 
 -}
 
-import Api.Data exposing (Data)
 import Api.Profile exposing (Profile)
 import Api.Token exposing (Token)
-import Http
+import BackendTask exposing (BackendTask)
+import BackendTask.Http
+import FatalError exposing (FatalError)
 import Iso8601
 import Json.Decode as Json
 import Json.Encode as Encode
@@ -48,15 +49,12 @@ decoder =
 get :
     { token : Maybe Token
     , articleSlug : String
-    , onResponse : Data (List Comment) -> msg
     }
-    -> Cmd msg
+    -> BackendTask FatalError (List Comment)
 get options =
     Api.Token.get options.token
-        { url = "https://conduit.productionready.io/api/articles/" ++ options.articleSlug ++ "/comments"
-        , expect =
-            Api.Data.expectJson options.onResponse
-                (Json.field "comments" (Json.list decoder))
+        { url = "https://api.realworld.io/api/articles/" ++ options.articleSlug ++ "/comments"
+        , expect = Json.field "comments" (Json.list decoder) |> BackendTask.Http.expectJson
         }
 
 
@@ -64,9 +62,8 @@ create :
     { token : Token
     , articleSlug : String
     , comment : { comment | body : String }
-    , onResponse : Data Comment -> msg
     }
-    -> Cmd msg
+    -> BackendTask FatalError Comment
 create options =
     let
         body : Json.Value
@@ -80,11 +77,10 @@ create options =
                 ]
     in
     Api.Token.post (Just options.token)
-        { url = "https://conduit.productionready.io/api/articles/" ++ options.articleSlug ++ "/comments"
-        , body = Http.jsonBody body
+        { url = "https://api.realworld.io/api/articles/" ++ options.articleSlug ++ "/comments"
+        , body = BackendTask.Http.jsonBody body
         , expect =
-            Api.Data.expectJson options.onResponse
-                (Json.field "comment" decoder)
+            Json.field "comment" decoder |> BackendTask.Http.expectJson
         }
 
 
@@ -92,16 +88,15 @@ delete :
     { token : Token
     , articleSlug : String
     , commentId : Int
-    , onResponse : Data Int -> msg
     }
-    -> Cmd msg
+    -> BackendTask FatalError Int
 delete options =
     Api.Token.delete (Just options.token)
         { url =
-            "https://conduit.productionready.io/api/articles/"
+            "https://api.realworld.io/api/articles/"
                 ++ options.articleSlug
                 ++ "/comments/"
                 ++ String.fromInt options.commentId
         , expect =
-            Api.Data.expectJson options.onResponse (Json.succeed options.commentId)
+            Json.succeed options.commentId |> BackendTask.Http.expectJson
         }

@@ -1,0 +1,9 @@
+.tag-default { border: 0 }
+
+button.nav-link {
+    all: unset;
+}
+
+button.mod-options {
+    all: unset;
+}
