@@ -167,7 +167,7 @@ action routeParams =
     Server.Request.map
         (\( _, parsedForm ) ->
             case parsedForm of
-                Ok (Action okForm) ->
+                Ok (Register okForm) ->
                     Api.User.registration
                         { user = okForm
                         }
@@ -190,11 +190,11 @@ action routeParams =
         (Server.Request.formData formHandlers)
 
 
-form : Form.HtmlForm String ParsedForm input Msg
+form : Form.HtmlForm String RegisterForm input Msg
 form =
     (\username email password ->
         { combine =
-            ParsedForm
+            RegisterForm
                 |> Form.Validation.succeed
                 |> Form.Validation.andMap username
                 |> Form.Validation.andMap email
@@ -233,13 +233,13 @@ form =
 
 
 type Action
-    = Action ParsedForm
+    = Register RegisterForm
 
 
 formHandlers : Form.ServerForms String Action
 formHandlers =
-    Form.initCombined Action form
+    Form.initCombined Register form
 
 
-type alias ParsedForm =
+type alias RegisterForm =
     { username : String, email : String, password : String }

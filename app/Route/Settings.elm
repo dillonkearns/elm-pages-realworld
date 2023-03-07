@@ -174,7 +174,7 @@ action routeParams =
                 case parsedRequest of
                     ( _, parsedForm ) ->
                         case parsedForm of
-                            Ok (Action okForm) ->
+                            Ok (UpdateSettings okForm) ->
                                 case token of
                                     Just justToken ->
                                         Api.User.update
@@ -215,11 +215,11 @@ action routeParams =
             )
 
 
-form : Form.HtmlForm String ParsedForm User Msg
+form : Form.HtmlForm String SettingsForm User Msg
 form =
     (\image username bio email password ->
         { combine =
-            ParsedForm
+            SettingsForm
                 |> Form.Validation.succeed
                 |> Form.Validation.andMap image
                 |> Form.Validation.andMap username
@@ -286,15 +286,15 @@ form =
 
 
 type Action
-    = Action ParsedForm
+    = UpdateSettings SettingsForm
 
 
 formHandlers : Form.ServerForms String Action
 formHandlers =
-    Form.initCombined Action form
+    Form.initCombined UpdateSettings form
 
 
-type alias ParsedForm =
+type alias SettingsForm =
     { image : String
     , username : String
     , bio : String

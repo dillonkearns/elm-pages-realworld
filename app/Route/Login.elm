@@ -160,7 +160,7 @@ action routeParams =
                 case formData of
                     ( formResponse, parsedForm ) ->
                         case parsedForm of
-                            Ok (Action okForm) ->
+                            Ok (Login okForm) ->
                                 Api.User.authentication
                                     { email = okForm.email
                                     , password = okForm.password
@@ -188,11 +188,11 @@ action routeParams =
             )
 
 
-form : Form.HtmlForm String ParsedForm () Msg
+form : Form.HtmlForm String LoginForm () Msg
 form =
     (\email password ->
         { combine =
-            ParsedForm
+            LoginForm
                 |> Form.Validation.succeed
                 |> Form.Validation.andMap email
                 |> Form.Validation.andMap password
@@ -222,13 +222,13 @@ form =
 
 
 type Action
-    = Action ParsedForm
+    = Login LoginForm
 
 
 formHandlers : Form.ServerForms String Action
 formHandlers =
-    Form.initCombined Action form
+    Form.initCombined Login form
 
 
-type alias ParsedForm =
+type alias LoginForm =
     { email : String, password : String }

@@ -207,7 +207,7 @@ action routeParams =
                 case parsedRequest of
                     ( _, parsedForm ) ->
                         case parsedForm of
-                            Ok (Action okForm) ->
+                            Ok (CreateOrUpdateArticle okForm) ->
                                 case token of
                                     Just justToken ->
                                         BackendTask.map
@@ -256,7 +256,7 @@ action routeParams =
 form :
     Form.HtmlForm
         String
-        ParsedForm
+        ArticleForm
         { article : Maybe Article
         , errors : List String
         }
@@ -264,7 +264,7 @@ form :
 form =
     (\title description body tags ->
         { combine =
-            ParsedForm
+            ArticleForm
                 |> Form.Validation.succeed
                 |> Form.Validation.andMap title
                 |> Form.Validation.andMap description
@@ -352,15 +352,15 @@ form =
 
 
 type Action
-    = Action ParsedForm
+    = CreateOrUpdateArticle ArticleForm
 
 
 formHandlers : Form.ServerForms String Action
 formHandlers =
-    Form.initCombined Action form
+    Form.initCombined CreateOrUpdateArticle form
 
 
-type alias ParsedForm =
+type alias ArticleForm =
     { title : String
     , description : String
     , body : String

@@ -227,7 +227,7 @@ action routeParams =
                 case parsedRequest of
                     ( _, parsedForm ) ->
                         case parsedForm of
-                            Ok (Action { slug, setFavorite }) ->
+                            Ok (ToggleFavorite { slug, setFavorite }) ->
                                 case token of
                                     Just justToken ->
                                         (if setFavorite then
@@ -454,9 +454,9 @@ type alias FavoriteAction =
 
 
 type Action
-    = Action FavoriteAction
+    = ToggleFavorite FavoriteAction
 
 
 formHandlers : Form.ServerForms String Action
 formHandlers =
-    Form.initCombined Action favoriteForm
+    Form.initCombined ToggleFavorite favoriteForm
