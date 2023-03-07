@@ -259,7 +259,6 @@ data routeParams =
                                 { user = user
                                 , profile = profile
                                 , selectedTab =
-                                    -- TODO check query params for active tab
                                     if viewFavorites then
                                         FavoritedArticles
 
