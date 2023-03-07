@@ -15,10 +15,8 @@ import Head
 import Html exposing (button, div, fieldset, h1, p, text)
 import Html.Attributes exposing (class, placeholder)
 import Layout
-import Pages.PageUrl
 import PagesMsg exposing (PagesMsg)
 import Path
-import Platform.Sub
 import Result
 import Route
 import RouteBuilder exposing (App)
@@ -158,7 +156,7 @@ action routeParams =
                             |> Result.withDefault Server.Session.empty
                 in
                 case formData of
-                    ( formResponse, parsedForm ) ->
+                    ( _, parsedForm ) ->
                         case parsedForm of
                             Ok (Login okForm) ->
                                 Api.User.authentication

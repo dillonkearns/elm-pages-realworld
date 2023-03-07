@@ -3,7 +3,7 @@ module Components.ArticleList exposing (view)
 import Api.Article exposing (Article)
 import Api.User exposing (User)
 import Html exposing (..)
-import Html.Attributes exposing (alt, class, classList, src)
+import Html.Attributes exposing (alt, class, src)
 import Route
 import Utils.Maybe
 import Utils.Time

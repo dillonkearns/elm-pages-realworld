@@ -20,7 +20,6 @@ import Html exposing (..)
 import Html.Attributes exposing (class, classList, href, src)
 import Layout
 import MySession
-import Pages.PageUrl
 import PagesMsg exposing (PagesMsg)
 import Path
 import RouteBuilder exposing (App)

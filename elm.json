@@ -20,8 +20,7 @@
             "elm-explorations/markdown": "1.0.0",
             "lamdera/codecs": "1.0.0",
             "rtfeldman/elm-iso8601-date-strings": "1.1.4",
-            "ryannhg/date-format": "2.3.0",
-            "ryannhg/elm-spa": "6.0.0"
+            "ryannhg/date-format": "2.3.0"
         },
         "indirect": {
             "Chadtech/elm-bool-extra": "2.4.2",

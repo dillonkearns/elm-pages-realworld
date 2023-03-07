@@ -15,7 +15,6 @@ import Html exposing (..)
 import Html.Attributes exposing (class, placeholder)
 import Layout
 import MySession
-import Pages.PageUrl
 import PagesMsg exposing (PagesMsg)
 import Path
 import Route

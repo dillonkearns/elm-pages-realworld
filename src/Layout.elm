@@ -4,8 +4,6 @@ import Components.Footer
 import Components.Navbar
 import Html exposing (..)
 import Html.Attributes exposing (class)
-import Json.Encode
-import PagesMsg exposing (PagesMsg)
 import Route
 
 

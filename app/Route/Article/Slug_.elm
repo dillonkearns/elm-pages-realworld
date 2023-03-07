@@ -2,7 +2,7 @@ module Route.Article.Slug_ exposing (ActionData, Data, Model, Msg, RouteParams, 
 
 import Api.Article exposing (Article)
 import Api.Article.Comment exposing (Comment)
-import Api.Profile exposing (Profile)
+import Api.Profile
 import Api.User exposing (User)
 import BackendTask exposing (BackendTask)
 import Components.IconButton as IconButton
