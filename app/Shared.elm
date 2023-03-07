@@ -1,6 +1,5 @@
 module Shared exposing (Data, Model, Msg(..), SharedMsg(..), template)
 
-import Api.User
 import BackendTask exposing (BackendTask)
 import Effect exposing (Effect)
 import FatalError exposing (FatalError)
@@ -25,7 +24,7 @@ template =
 
 
 type Msg
-    = MenuClicked
+    = NoOp
 
 
 type alias Data =
@@ -37,8 +36,7 @@ type SharedMsg
 
 
 type alias Model =
-    { user : Maybe Api.User.User
-    }
+    {}
 
 
 init :
@@ -55,7 +53,7 @@ init :
             }
     -> ( Model, Effect Msg )
 init flags maybePagePath =
-    ( { user = Nothing }
+    ( {}
     , Effect.none
     )
 
@@ -63,8 +61,8 @@ init flags maybePagePath =
 update : Msg -> Model -> ( Model, Effect Msg )
 update msg model =
     case msg of
-        MenuClicked ->
-            ( { model | user = Nothing }, Effect.none )
+        NoOp ->
+            ( model, Effect.none )
 
 
 subscriptions : Path -> Model -> Sub Msg
@@ -94,8 +92,7 @@ view sharedData page model toMsg pageView =
 
         else
             pageView.title ++ " | Conduit"
-    , body =
-        pageView.body
+    , body = pageView.body
 
     --[ div [ class "layout" ]
     --    [ Components.Navbar.view
