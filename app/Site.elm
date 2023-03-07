@@ -6,6 +6,6 @@ import SiteConfig exposing (SiteConfig)
 
 config : SiteConfig
 config =
-    { canonicalUrl = "https://elm-pages.com" -- TODO change canonical URL
+    { canonicalUrl = "https://elm-pages-realworld.netlify.app"
     , head = BackendTask.succeed []
     }
