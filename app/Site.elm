@@ -1,6 +1,6 @@
 module Site exposing (config)
 
-import BackendTask exposing (BackendTask)
+import BackendTask
 import SiteConfig exposing (SiteConfig)
 
 
