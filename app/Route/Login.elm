@@ -132,7 +132,7 @@ view app shared model =
                 ]
             ]
         ]
-            |> Layout.view Nothing
+            |> Layout.view app Nothing
     }
 
 

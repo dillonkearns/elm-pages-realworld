@@ -195,7 +195,7 @@ view app shared model =
                 ]
             ]
         ]
-            |> Layout.view app.data.user
+            |> Layout.view app app.data.user
     }
 
 

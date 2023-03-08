@@ -95,7 +95,7 @@ view app shared model =
     { title = "Profile"
     , body =
         [ viewProfile app app.data.profile ]
-            |> Layout.view app.data.user
+            |> Layout.view app app.data.user
     }
 
 

@@ -117,7 +117,7 @@ view app shared model =
                 ]
             ]
         ]
-            |> Layout.view (Just app.data.user)
+            |> Layout.view app (Just app.data.user)
     }
 
 

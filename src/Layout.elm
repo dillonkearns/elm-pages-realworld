@@ -7,13 +7,21 @@ import Html.Attributes exposing (class)
 import Route
 
 
-view user inner =
+view app user inner =
     [ div [ class "layout" ]
         [ Components.Navbar.view
             { user = user
             , currentRoute = Route.Index
             }
-        , div [ class "page" ] inner
+        , div [ class "page" ]
+            (case app.transition of
+                Just _ ->
+                    [ text "Loading..."
+                    ]
+
+                _ ->
+                    inner
+            )
         ]
     , Components.Footer.view
     ]

@@ -104,7 +104,7 @@ view app shared model =
     , body =
         [ viewArticle app app.data.article
         ]
-            |> Layout.view app.data.user
+            |> Layout.view app app.data.user
     }
 
 

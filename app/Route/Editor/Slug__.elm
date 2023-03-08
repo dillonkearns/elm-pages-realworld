@@ -109,7 +109,7 @@ view app model shared =
     , body =
         [ editorView app
         ]
-            |> Layout.view (Just app.data.user)
+            |> Layout.view app (Just app.data.user)
     }
 
 
