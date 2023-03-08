@@ -13,15 +13,15 @@ view app user inner =
             { user = user
             , currentRoute = Route.Index
             }
-        , div [ class "page" ]
-            (case app.transition of
+        , div
+            [ case app.transition of
                 Just _ ->
-                    [ text "Loading..."
-                    ]
+                    class "page loading"
 
-                _ ->
-                    inner
-            )
+                Nothing ->
+                    class "page"
+            ]
+            (div [ class "loading-text" ] [ text "Loading..." ] :: inner)
         ]
     , Components.Footer.view
     ]

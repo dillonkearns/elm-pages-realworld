@@ -7,3 +7,41 @@ button.nav-link {
 button.mod-options {
     all: unset;
 }
+
+.page .loading-text {
+    visibility: hidden;
+    width: 0;
+    height: 0;
+}
+
+.page :not(.loading-text) {
+    width: auto;
+    height: auto;
+    visibility: visible;
+}
+
+.page.loading :not(.loading-text) {
+    animation: hideAnimation 0s ease-in 500ms forwards;
+    animation-fill-mode: forwards;
+}
+
+.page.loading .loading-text {
+    animation: cssAnimation 0s ease-in 500ms forwards;
+    animation-fill-mode: forwards;
+}
+
+@keyframes cssAnimation {
+    to {
+        width: auto;
+        height: auto;
+        visibility: visible;
+    }
+}
+
+@keyframes hideAnimation {
+    to {
+        width: 0px;
+        height: 0px;
+        visibility: hidden;
+    }
+}
