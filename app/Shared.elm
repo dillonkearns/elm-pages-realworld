@@ -24,7 +24,7 @@ template =
 
 
 type Msg
-    = NoOp
+    = NoOpMsg
 
 
 type alias Data =
@@ -61,7 +61,7 @@ init flags maybePagePath =
 update : Msg -> Model -> ( Model, Effect Msg )
 update msg model =
     case msg of
-        NoOp ->
+        NoOpMsg ->
             ( model, Effect.none )
 
 
